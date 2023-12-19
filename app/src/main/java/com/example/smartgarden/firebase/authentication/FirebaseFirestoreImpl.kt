@@ -48,5 +48,12 @@ class FirebaseFirestoreImpl @Inject constructor() : FirebaseFirestoreInterface {
             }
     }
 
+    override fun saveToken(uid: String, token : String){
+        val hash = hashMapOf<String, String>(
+            "token" to token
+        )
+        db.collection(uid).document("firebase_token").set(hash)
+    }
+
 
 }

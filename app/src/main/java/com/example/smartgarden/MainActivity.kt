@@ -3,6 +3,7 @@ package com.example.smartgarden
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -18,6 +19,7 @@ import com.example.smartgarden.navigation.SetupNavGraph
 import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.ui.theme.SmartGardenTheme
 import com.example.smartgarden.viewmodels.LoginViewModel
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -63,9 +65,9 @@ class MainActivity : ComponentActivity() {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), 0)
         }
-        /*if (ContextCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), 0)
-        }*/
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 0)
+        }
     }
 
 

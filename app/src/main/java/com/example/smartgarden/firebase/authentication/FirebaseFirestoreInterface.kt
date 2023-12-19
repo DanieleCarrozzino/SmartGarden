@@ -20,4 +20,9 @@ interface FirebaseFirestoreInterface {
      * */
     fun setGardens(uid : String, key : String, garden : HashMap<String, String>)
 
+    /**
+     * Save firebase messaging token
+     * */
+    fun saveToken(uid: String, token : String)
+
 }

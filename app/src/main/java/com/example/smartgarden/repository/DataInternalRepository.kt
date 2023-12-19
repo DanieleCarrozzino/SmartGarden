@@ -11,7 +11,8 @@ class DataInternalRepository @Inject constructor(
     private val shared : SharedPreferenceManager
 ) {
 
-    private val GARDEN_KEY = "garden"
+    private val GARDEN_KEY      = "garden"
+    private val FIREBASE_TOKEN  = "firebase_token"
 
     /**
      * Save the garden while
@@ -20,7 +21,6 @@ class DataInternalRepository @Inject constructor(
     fun saveGarden(garden : HashMap<String, String>){
         shared.putString(convertHashMapToJson(garden), GARDEN_KEY)
     }
-
 
     /**
      * Retrieve the garden currently associated
@@ -33,6 +33,14 @@ class DataInternalRepository @Inject constructor(
         } catch(ex : Exception) {
             hashMapOf<String, String>()
         }
+    }
+
+    fun saveToken(token : String){
+        shared.putString(token, FIREBASE_TOKEN)
+    }
+
+    fun getToken() : String{
+        return shared.getString(FIREBASE_TOKEN)
     }
 
 }
