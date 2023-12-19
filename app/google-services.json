@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "880067905026",
+    "firebase_url": "https://smartgarden-d7604-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "smartgarden-d7604",
+    "storage_bucket": "smartgarden-d7604.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:880067905026:android:55ca40f4ca5627e76ac91b",
+        "android_client_info": {
+          "package_name": "com.example.smartgarden"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "880067905026-gvake2jkks5gjko0nlsdftb1o6tqa373.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.smartgarden",
+            "certificate_hash": "cf38d86cd2cb721931c344fc32d1872fa98be3f3"
+          }
+        },
+        {
+          "client_id": "880067905026-na8977ba2ojl4v2jmbr2rfdl1b642b0r.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBRnd-YwNZTQyVdaBMKGrG5tqv7meBNUTA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "880067905026-na8977ba2ojl4v2jmbr2rfdl1b642b0r.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
