@@ -148,7 +148,7 @@ class FirebaseAuthenticationImpl @Inject constructor(
                 BeginSignInRequest.GoogleIdTokenRequestOptions.builder()
                     .setSupported(true)
                     // Your server's client ID, not your Android client ID.
-                    .setServerClientId("880067905026-gvake2jkks5gjko0nlsdftb1o6tqa373.apps.googleusercontent.com")
+                    .setServerClientId("880067905026-na8977ba2ojl4v2jmbr2rfdl1b642b0r.apps.googleusercontent.com")
                     // Only show accounts previously used to sign in.
                     .setFilterByAuthorizedAccounts(false)
                     .build())
