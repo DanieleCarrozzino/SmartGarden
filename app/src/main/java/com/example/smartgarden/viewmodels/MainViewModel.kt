@@ -70,6 +70,7 @@ class MainViewModel @Inject constructor(
     val connected           = mutableStateOf(false)
 
     // Visible Chart
+    var animationChartIsRunning = false
     val chart = MutableLiveData<ChartObject>()
 
     fun init(){
@@ -111,6 +112,10 @@ class MainViewModel @Inject constructor(
     }
 
     private fun animateCharts(){
+
+        if(animationChartIsRunning) return
+
+        animationChartIsRunning = true
         viewModelScope.launch(Dispatchers.IO) {
             while(true){
                 //TODO get real list of values

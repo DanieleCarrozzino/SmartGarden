@@ -151,11 +151,11 @@ fun HomeScreen(navController: NavController){
                             transitionSpec = {
                                 slideInHorizontally(
                                     animationSpec = tween(1000),
-                                    initialOffsetX = { fullWidth -> fullWidth }
+                                    initialOffsetX = { fullWidth -> - fullWidth }
                                 ) togetherWith
                                         slideOutHorizontally(
                                             animationSpec = tween(1000),
-                                            targetOffsetX = { fullWidth -> -fullWidth }
+                                            targetOffsetX = { fullWidth -> fullWidth }
                                         )
                             }
                         )
