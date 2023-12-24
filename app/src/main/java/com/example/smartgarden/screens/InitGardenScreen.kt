@@ -93,7 +93,7 @@ fun InitGardenScreen(navController: NavController){
     }
 
     if(finished){
-        navController.navigate("home")
+        navController.navigate("init_config_raspberry")
     }
 
     val loadedGarden by remember {
@@ -138,6 +138,11 @@ fun InitGardenScreen(navController: NavController){
 @Composable
 fun ListOfGardens(list : List<DocumentSnapshot>){
 
+    val tmpList = list.toMutableList()
+    tmpList.removeIf {
+        it.id == "firebase_token"
+    }
+
     val viewModel = hiltViewModel<LoginViewModel>()
 
     LazyColumn(
@@ -163,10 +168,10 @@ fun ListOfGardens(list : List<DocumentSnapshot>){
             )
             Spacer(modifier = Modifier.height(20.dp))
         }
-        itemsIndexed(list) { _, item ->
+        itemsIndexed(tmpList) { _, item ->
 
             val name = item.get("name").toString()
-            val creation = item.get("dateCreation").toString()
+            val creation = item.get("date_creation").toString()
 
             val mod = Modifier
                 .wrapContentSize()
@@ -180,7 +185,7 @@ fun ListOfGardens(list : List<DocumentSnapshot>){
                     val garden = hashMapOf(
                         "name" to item["name"].toString(),
                         "id" to item["id"].toString(),
-                        "dateCreation" to item["dateCreation"].toString()
+                        "date_creation" to item["date_creation"].toString()
                     )
                     viewModel.saveGardenAndGoOn(garden)
                 }
@@ -303,7 +308,7 @@ fun EmptyGardens(id_image : Int, modifier: Modifier){
 
         GenericButton(
             modifier = Modifier
-                .padding(10.dp)
+                .padding(15.dp)
                 .background(MaterialTheme.colorScheme.background)
                 .align(Alignment.CenterHorizontally),
             viewModel::createGarden,
@@ -362,6 +367,49 @@ fun GenericButton(
                     .align(Alignment.CenterVertically)
                     .padding(10.dp),
                 text = text,
+                textAlign = TextAlign.Center)
+        }
+    }
+}
+
+@Composable
+fun BigImageButton(
+    modifier: Modifier,
+    functionClicked : () -> Unit,
+    text : String,
+    id_icon : Int = -1){
+    Card(
+        modifier = modifier,
+        elevation = CardDefaults.elevatedCardElevation(
+            defaultElevation = 4.dp
+        ), // Set elevation value for the card
+        shape = RoundedCornerShape(30.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.onPrimary
+        ),
+    ) {
+        Row(modifier = Modifier
+            .background(MaterialTheme.colorScheme.onPrimary)
+            .clickable {
+                functionClicked()
+            }
+            .padding(20.dp, 10.dp, 20.dp, 10.dp)) {
+
+            if(id_icon >= 0){
+                Image(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .align(Alignment.CenterVertically),
+                    painter = painterResource(id = id_icon),
+                    contentDescription = "google icon",)
+            }
+
+            Text(
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .padding(10.dp),
+                text = text,
+                fontWeight = FontWeight.Bold,
                 textAlign = TextAlign.Center)
         }
     }

@@ -22,3 +22,8 @@ val WhiteText = Color(0xFFE0E0E0)
 val Green = Color(0xFF274109)
 val Green80 = Color(0xFFEBF8DB)
 val Green20 = Color(0xFF404935)
+
+val Blue20 = Color(0x8FA8DEF7)
+val Blue80 = Color(0xFF2196F3)
+
+val Opac = Color(0x3C8B8B8B)

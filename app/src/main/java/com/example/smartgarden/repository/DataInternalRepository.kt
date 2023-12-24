@@ -13,6 +13,7 @@ class DataInternalRepository @Inject constructor(
 
     private val GARDEN_KEY      = "garden"
     private val FIREBASE_TOKEN  = "firebase_token"
+    private val CONNECTED_RASP  = "connected_raspberry"
 
     /**
      * Save the garden while
@@ -41,6 +42,14 @@ class DataInternalRepository @Inject constructor(
 
     fun getToken() : String{
         return shared.getString(FIREBASE_TOKEN)
+    }
+
+    fun setConnected() {
+        shared.putBoolean(CONNECTED_RASP, true)
+    }
+
+    fun getConnected() : Boolean{
+        return shared.getBoolean(CONNECTED_RASP)
     }
 
 }

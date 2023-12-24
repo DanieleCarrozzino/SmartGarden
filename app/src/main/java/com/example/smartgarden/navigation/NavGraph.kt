@@ -4,8 +4,10 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.example.smartgarden.screens.ConfigRaspberryScreen
 import com.example.smartgarden.screens.HomeScreen
 import com.example.smartgarden.screens.InitGardenScreen
+import com.example.smartgarden.screens.InitRaspberryScreen
 import com.example.smartgarden.screens.LoginScreen
 
 @Composable
@@ -32,10 +34,15 @@ fun SetupNavGraph(
         ){
             HomeScreen(navController = navController)
         }
-//        composable(
-//            route = "settings"
-//        ){
-//            SettingsScreen(navController = navController)
-//        }
+        composable(
+            route = "config_raspberry"
+        ){
+            ConfigRaspberryScreen(navController = navController)
+        }
+        composable(
+            route = "init_config_raspberry"
+        ){
+            InitRaspberryScreen(navController = navController)
+        }
     }
 }

@@ -1,4 +1,4 @@
-package com.example.smartgarden.firebase.authentication
+package com.example.smartgarden.firebase.storage
 
 import com.google.firebase.database.DatabaseReference
 
@@ -12,6 +12,11 @@ interface FirebaseRealTimeDatabase {
      * @return identifying key of the node
      * */
     fun insertNode(module : String, childs : List<String>, node : String) : String
+
+    /**
+     * Force to write the node inside the given path
+     * */
+    fun insertForceNode(module : String, childs : List<String>, node : String)
 
 
     /**

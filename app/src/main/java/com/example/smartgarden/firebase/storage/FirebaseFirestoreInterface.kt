@@ -1,4 +1,4 @@
-package com.example.smartgarden.firebase.authentication
+package com.example.smartgarden.firebase.storage
 
 import com.google.firebase.firestore.DocumentSnapshot
 
@@ -9,6 +9,12 @@ interface FirebaseFirestoreInterface {
      * */
     fun setCallback(callback : (String) -> Unit)
     fun setCallbackGardens(callback : (List<DocumentSnapshot>) -> Unit)
+
+    /**************************
+    *
+    *         GARDENS
+    *
+    * **************************/
 
     /**
      * Get gardens of a specific uid user

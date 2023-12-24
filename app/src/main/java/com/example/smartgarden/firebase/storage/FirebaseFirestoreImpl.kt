@@ -1,14 +1,8 @@
-package com.example.smartgarden.firebase.authentication
+package com.example.smartgarden.firebase.storage
 
-import android.util.Log
 import com.google.firebase.firestore.DocumentSnapshot
-import com.google.firebase.firestore.firestore
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
-import java.time.LocalDateTime
-import java.time.format.DateTimeFormatter
-import java.util.Calendar
-import java.util.Locale
 import javax.inject.Inject
 
 class FirebaseFirestoreImpl @Inject constructor() : FirebaseFirestoreInterface {

@@ -1,4 +1,4 @@
-package com.example.smartgarden.firebase.authentication
+package com.example.smartgarden.firebase.storage
 
 import com.google.firebase.database.DatabaseReference
 import com.google.firebase.database.FirebaseDatabase
@@ -21,6 +21,14 @@ class FirebaseRealTimeDatabaseImpl : FirebaseRealTimeDatabase {
 
         // return the key to save or to use
         return key ?: ""
+    }
+
+    override fun insertForceNode(module : String, childs : List<String>, node : String){
+        // build the path
+        val ref = getReference(module, childs)
+
+        //Insert node
+        ref.setValue(node)
     }
 
     override fun getNodeReference(module : String, childs : List<String>) : DatabaseReference {

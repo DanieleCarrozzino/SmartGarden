@@ -91,6 +91,18 @@ dependencies {
 
     // Util
     implementation("com.google.code.gson:gson:2.10")
+
+    // ssh library
+    implementation("com.jcraft:jsch:0.1.55")
+
+    // Camera and qr import
+    implementation ("com.google.mlkit:barcode-scanning:17.2.0") // Check for the latest version
+    implementation ("androidx.camera:camera-camera2:1.3.1") // CameraX dependencies
+    implementation ("androidx.camera:camera-lifecycle:1.3.1")
+    implementation ("androidx.camera:camera-view:1.3.1")
+
+    // Live data
+    implementation("androidx.compose.runtime:runtime-livedata:1.5.4")
 }
 
 // Allow references to generated code

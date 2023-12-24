@@ -1,26 +1,62 @@
 package com.example.smartgarden.viewmodels
 
+import android.content.Context
 import android.util.Log
+import androidx.annotation.OptIn
+import androidx.camera.core.CameraSelector
+import androidx.camera.core.ExperimentalGetImage
+import androidx.camera.core.ImageAnalysis
+import androidx.camera.core.ImageAnalysis.Analyzer
+import androidx.camera.core.ImageProxy
+import androidx.camera.core.Preview
+import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.view.PreviewView
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.smartgarden.firebase.authentication.FirebaseAuthenticator
-import com.example.smartgarden.firebase.authentication.FirebaseFirestoreImpl
-import com.example.smartgarden.firebase.authentication.FirebaseRealTimeDatabase
+import com.example.smartgarden.firebase.storage.FirebaseFirestoreImpl
+import com.example.smartgarden.firebase.storage.FirebaseRealTimeDatabase
+import com.example.smartgarden.manager.RaspberryConnectionManager
+import com.example.smartgarden.objects.CHART_TYPE
+import com.example.smartgarden.objects.ChartObject
 import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.utility.Utility.Companion.convertJsonToHashMap
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.database.values
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.mlkit.vision.barcode.BarcodeScanner
+import com.google.mlkit.vision.barcode.BarcodeScannerOptions
+import com.google.mlkit.vision.barcode.BarcodeScanning
+import com.google.mlkit.vision.barcode.common.Barcode
+import com.google.mlkit.vision.common.InputImage
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.asExecutor
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import java.io.BufferedWriter
+import java.io.File
+import java.io.FileWriter
 import javax.inject.Inject
+import kotlin.random.Random
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
+    @ApplicationContext context : Context,
     private val auth : FirebaseAuthenticator,
     private val firestore : FirebaseFirestoreImpl,
     private val database : FirebaseRealTimeDatabase,
-    private val dataInternalRepository: DataInternalRepository
+    private val dataInternalRepository: DataInternalRepository,
+    private val raspberryConnection : RaspberryConnectionManager
 ) : ViewModel() {
 
     private lateinit var garden : HashMap<String, String>
@@ -28,7 +64,17 @@ class MainViewModel @Inject constructor(
     val name = mutableStateOf("")
     val date = mutableStateOf("")
 
+    private val filesDirInternal : String = context.filesDir.absolutePath
+    val doingConfiguration  = mutableStateOf(false)
+    val statusConfiguration = MutableLiveData<RaspberryConnectionManager.RaspberryStatus>()
+    val connected           = mutableStateOf(false)
+
+    // Visible Chart
+    val chart = MutableLiveData<ChartObject>()
+
     fun init(){
+        connected.value = dataInternalRepository.getConnected()
+        animateCharts()
         startGardenListener()
         retrieveToken()
     }
@@ -39,23 +85,54 @@ class MainViewModel @Inject constructor(
      * */
     private fun startGardenListener(){
         garden = dataInternalRepository.getGarden()
-        database.getNodeReference("gardens", listOf<String>(auth.currentUser?.uid ?: "", garden["id"].toString()))
+        database.getNodeReference("gardens", listOf<String>(garden["id"].toString()))
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(dataSnapshot: DataSnapshot) {
-                    val key     = dataSnapshot.key
-                    val value   = dataSnapshot.getValue(String::class.java)
+                    try {
+                        val key = dataSnapshot.key
+                        val value = dataSnapshot.getValue(String::class.java)
 
-                    garden = convertJsonToHashMap(value.toString())
+                        garden = convertJsonToHashMap(value.toString())
+                        garden["id"] = key.toString()
 
-                    // Update layout
-                    name.value = garden["name"].toString()
-                    date.value = garden["dateCreation"].toString()
+                        // Update layout
+                        name.value = garden["name"].toString()
+                        date.value = garden["date_creation"].toString()
+                    }
+                    catch(ex : Exception){
+                        Log.w("ViewModel", ex.message.toString())
+                    }
                 }
 
                 override fun onCancelled(databaseError: DatabaseError) {
 
                 }
             })
+    }
+
+    private fun animateCharts(){
+        viewModelScope.launch(Dispatchers.IO) {
+            while(true){
+                //TODO get real list of values
+                val list = mutableListOf<Float>()
+                for (i in 0 until 10){
+                    list.add(Random.nextFloat() * 50f)
+                }
+
+                val type = CHART_TYPE
+                    .entries
+                    .toTypedArray()[((chart.value?.type?.ordinal ?: 0) + 1) % CHART_TYPE.entries.size]
+                launch(Dispatchers.Main) {
+                    //Set the title of the chart and the type
+                    chart.value = ChartObject(
+                        list,
+                        type,
+                        type.toString()
+                    )
+                }
+                delay(7000)
+            }
+        }
     }
 
     /**
@@ -77,5 +154,167 @@ class MainViewModel @Inject constructor(
                 Log.e("FCM Token", "Fetching FCM token failed: ${task.exception}")
             }
         }
+    }
+
+
+    /**
+     * Connect the camera preview to the screen and
+     * start the qr code scanner
+     * */
+    fun bindCameraPreview(cameraProvider: ProcessCameraProvider, previewView: PreviewView, lifecycleOwner: LifecycleOwner) {
+        // Init preview
+        val preview = Preview.Builder().build()
+
+        // Init qr scanner
+        raspberryConnection.initializeScanner(::raspberryCallback)
+
+        // Define the camera
+        val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
+
+        preview.setSurfaceProvider(previewView.surfaceProvider)
+
+        // Start analyzing
+        val imageAnalyzer = ImageAnalysis.Builder()
+            .build()
+            .also {
+                it.setAnalyzer(Dispatchers.IO.asExecutor(), raspberryConnection)
+            }
+
+        try {
+            cameraProvider.unbindAll()
+            cameraProvider.bindToLifecycle(
+                lifecycleOwner,
+                cameraSelector,
+                preview,
+                imageAnalyzer
+            )
+        } catch (exc: Exception) {
+            // Handle camera binding exception
+        }
+    }
+
+    /**
+     * SCANNED -> get the raspberry code from the qr
+     * and get the ip and other info of the raspberry from
+     * the real_database on firebase and save the code of the raspberry
+     * inside my personal data on the real_database,
+     * create a configurator file
+     * with my uid and the code of the garden and send all this
+     * stuff to the raspberry manager
+     *
+     * START_CONFIGURED -> Start to send the configurator file
+     * to the raspberry
+     *
+     * END_CONFIGURED -> Check if everything goes well,
+     * otherwise restart the process with a limit number of retry
+     *
+     * FINISHED -> check my data and the data of the raspberry
+     * and close the configurator screen
+     * */
+    fun raspberryCallback(
+        result : RaspberryConnectionManager.RaspberryStatus,
+        qrCode : String? = ""
+    ){
+        updateConfigStatus(result)
+        when(result){
+            RaspberryConnectionManager.RaspberryStatus.SCANNED -> {
+                doingConfiguration.value = true
+                viewModelScope.launch(Dispatchers.IO) {
+
+                    // Get info
+                    val raspberry = handleQrCode(qrCode ?: "")
+                    // Create configurator
+                    val path = createConfiguratorFile()
+
+                    if(path.isNotEmpty()){
+                        // Set rasp info
+                        raspberryConnection.sourceFilePath      = path
+                        raspberryConnection.raspberryIp         = raspberry["ip"].toString()
+                        raspberryConnection.raspberryUsername   = raspberry["username"].toString()
+
+                        // Send file
+                        // TODO test
+                        delay(3000)
+                        updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.START_CONFIGURED)
+                        //raspberryConnection.sendConfigFile()
+                        delay(3000)
+                        updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.END_CONFIGURED)
+                        delay(3000)
+                        updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.FINISHED)
+                        delay(3000)
+                        updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.CLOSE)
+                    }
+                }
+            }
+            RaspberryConnectionManager.RaspberryStatus.START_CONFIGURED -> {
+                //TODO start animation
+            }
+            RaspberryConnectionManager.RaspberryStatus.END_CONFIGURED -> {
+                //TODO end animation
+            }
+            RaspberryConnectionManager.RaspberryStatus.FINISHED -> {
+                dataInternalRepository.setConnected()
+                viewModelScope.launch(Dispatchers.IO)  {
+                    delay(3000)
+                    raspberryCallback(RaspberryConnectionManager.RaspberryStatus.CLOSE, "")
+                }
+            }
+            RaspberryConnectionManager.RaspberryStatus.CLOSE -> {
+
+            }
+        }
+    }
+
+    private fun updateConfigStatus(state : RaspberryConnectionManager.RaspberryStatus){
+        viewModelScope.launch(Dispatchers.Main) {
+            statusConfiguration.value = state
+        }
+    }
+
+    /**
+     * Get raspberry info
+     * */
+    private suspend fun handleQrCode(qrCode : String) : HashMap<String, String>{
+        val ref = database.getNodeReference("raspberry", listOf(qrCode))
+
+        try {
+            // Get rasp info
+            val dataSnapshot = try {
+                ref.get().await()
+            } catch (e: Exception) {
+                null
+            }
+
+            val value           = dataSnapshot?.getValue(String::class.java)
+            val raspberry       = convertJsonToHashMap(value.toString())
+
+            Log.d("ViewModel", "raspberry ip: ${raspberry["ip"].toString()}")
+            return raspberry
+        }
+        catch(ex : Exception){
+            Log.e("ViewModel", ex.message.toString())
+        }
+        return hashMapOf()
+    }
+
+    private fun createConfiguratorFile() : String{
+        val fileName = "configuratorFile${auth.currentUser?.uid}.txt"
+        val fileContent =
+            "user_uid:${auth.currentUser?.uid}\n" +
+                    "garden_key:${garden["id"]}"
+
+        val file = File(filesDirInternal, fileName)
+
+        try {
+            val writer = BufferedWriter(FileWriter(file))
+            writer.write(fileContent)
+            writer.close()
+
+            println("File created successfully at: ${file.absolutePath}")
+        } catch (e: Exception) {
+            println("Error creating the file: ${e.message}")
+            return ""
+        }
+        return fileName
     }
 }

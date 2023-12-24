@@ -3,10 +3,11 @@ package com.example.smartgarden.module
 import android.content.Context
 import com.example.smartgarden.firebase.authentication.FirebaseAuthenticationImpl
 import com.example.smartgarden.firebase.authentication.FirebaseAuthenticator
-import com.example.smartgarden.firebase.authentication.FirebaseFirestoreImpl
-import com.example.smartgarden.firebase.authentication.FirebaseFirestoreInterface
-import com.example.smartgarden.firebase.authentication.FirebaseRealTimeDatabase
-import com.example.smartgarden.firebase.authentication.FirebaseRealTimeDatabaseImpl
+import com.example.smartgarden.firebase.storage.FirebaseFirestoreImpl
+import com.example.smartgarden.firebase.storage.FirebaseFirestoreInterface
+import com.example.smartgarden.firebase.storage.FirebaseRealTimeDatabase
+import com.example.smartgarden.firebase.storage.FirebaseRealTimeDatabaseImpl
+import com.example.smartgarden.manager.RaspberryConnectionManager
 import com.example.smartgarden.manager.SharedPreferenceManager
 import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.viewmodels.LoginViewModel
@@ -56,12 +57,14 @@ object AppModule {
     @Provides
     @Singleton
     fun provideMainViewModel(
+        @ApplicationContext context : Context,
         auth : FirebaseAuthenticator,
         firestore : FirebaseFirestoreImpl,
         database : FirebaseRealTimeDatabase,
-        dataInternalRepository: DataInternalRepository
+        dataInternalRepository: DataInternalRepository,
+        raspberryConnection : RaspberryConnectionManager
     ) : MainViewModel {
-        return MainViewModel(auth, firestore, database, dataInternalRepository)
+        return MainViewModel(context, auth, firestore, database, dataInternalRepository, raspberryConnection)
     }
 
     @Provides
@@ -70,6 +73,14 @@ object AppModule {
         @ApplicationContext context : Context
     ) : SharedPreferenceManager{
         return SharedPreferenceManager(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideRaspberryConnectionManager(
+        @ApplicationContext context : Context
+    ) : RaspberryConnectionManager {
+        return RaspberryConnectionManager(context)
     }
 
     @Provides

@@ -1,5 +1,9 @@
 package com.example.smartgarden.utility
 
+import android.app.Activity
+import android.content.Context
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
 import java.util.Calendar

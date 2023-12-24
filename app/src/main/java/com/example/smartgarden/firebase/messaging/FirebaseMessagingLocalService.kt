@@ -1,4 +1,4 @@
-package com.example.smartgarden.firebase
+package com.example.smartgarden.firebase.messaging
 
 import android.util.Log
 import com.example.smartgarden.utility.Notificator.Companion.showNotification
@@ -18,6 +18,7 @@ class FirebaseMessagingLocalService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         Log.d("FirebaseMessaging", token)
+        //TODO update firebase
     }
 
 }

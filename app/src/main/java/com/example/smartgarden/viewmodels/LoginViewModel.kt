@@ -3,15 +3,13 @@ package com.example.smartgarden.viewmodels
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
 import com.example.smartgarden.firebase.authentication.FirebaseAuthenticator
-import com.example.smartgarden.firebase.authentication.FirebaseFirestoreInterface
-import com.example.smartgarden.firebase.authentication.FirebaseRealTimeDatabase
+import com.example.smartgarden.firebase.storage.FirebaseFirestoreInterface
+import com.example.smartgarden.firebase.storage.FirebaseRealTimeDatabase
 import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.utility.Utility
 import com.example.smartgarden.utility.Utility.Companion.getCurrentDateTime
 import com.google.firebase.firestore.DocumentSnapshot
 import dagger.hilt.android.lifecycle.HiltViewModel
-import java.util.Calendar
-import java.util.Locale
 import javax.inject.Inject
 
 @HiltViewModel
@@ -54,7 +52,21 @@ class LoginViewModel @Inject constructor(
     fun resultSignIn(result : Int){
         signInResult = result
         when(signInResult){
-            200 -> signedIn.value       = true
+            200 -> {
+                signedIn.value = true
+
+                val user = hashMapOf<String, String>(
+                    "id" to (auth.currentUser?.uid ?: ""),
+                    "email" to (auth.currentUser?.email ?: ""),
+                    "date_creation" to getCurrentDateTime()
+                )
+
+                // Save user inside the realtime database
+                database.insertForceNode(
+                    "users",
+                    listOf<String>(auth.currentUser?.uid ?: ""),
+                    Utility.convertHashMapToJson(user))
+            }
             400 -> passwordError.value  = true
             401 -> {} //TODO manage other type of errors
         }
@@ -98,18 +110,18 @@ class LoginViewModel @Inject constructor(
     fun createGarden(){
         garden = hashMapOf(
             "name" to gardenName.value,
-            "dateCreation" to getCurrentDateTime()
+            "date_creation" to getCurrentDateTime()
         )
 
         if(auth.currentUser?.uid?.isNotEmpty() == true) {
             //Save inside the realtime database
             val key = database.insertNode(
                 "gardens",
-                listOf<String>(auth.currentUser?.uid ?: ""),
+                listOf<String>(),
                 Utility.convertHashMapToJson(garden))
 
             // Add unique id
-            garden.put("id", key)
+            garden["id"] = key
 
             // Save inside the firestore to connect the user to the garden
             firestore.setGardens(auth.currentUser?.uid ?: "", key, garden)

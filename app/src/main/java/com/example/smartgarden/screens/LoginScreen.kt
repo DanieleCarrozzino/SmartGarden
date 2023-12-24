@@ -183,6 +183,88 @@ fun LoginScreen(navController: NavController){
         modifier = Modifier.fillMaxSize(),
         color = MaterialTheme.colorScheme.background
     ) {
+        Box(modifier = Modifier,
+            contentAlignment = Alignment.TopEnd,){
+
+            Image(
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .graphicsLayer(
+                        translationX = animatedValueX2 + 20f,
+                        translationY = animatedValueY2,
+                        rotationZ = animatedValueRotation2,
+                    ),
+                painter = painterResource(id = R.drawable.branch_2),
+                contentDescription = "branch 1",)
+
+        }
+
+        Card(
+            modifier = Modifier.padding(0.dp, 80.dp, 0.dp, 0.dp).wrapContentSize(align = Alignment.TopCenter),
+            elevation = CardDefaults.elevatedCardElevation(
+                defaultElevation = 8.dp
+            ), // Set elevation value for the card
+            shape = RoundedCornerShape(30.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.primaryContainer
+            ),
+        ) {
+            Text(
+                modifier = Modifier
+                    .background(MaterialTheme.colorScheme.primaryContainer)
+                    .clip(RoundedCornerShape(20.dp))
+                    .padding(20.dp, 8.dp, 20.dp, 8.dp),
+                text = "Smart Garden",
+                fontSize = 36.sp,
+                fontWeight = FontWeight.Bold,
+                fontFamily = FontFamily(Font(R.font.rubik, FontWeight.Bold)),
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+            )
+        }
+
+        Box(modifier = Modifier
+            .padding(),
+            contentAlignment = Alignment.TopStart,){
+
+//            Image(
+//                modifier = Modifier
+//                    .align(Alignment.TopStart)
+//                    .scale(1f)
+//                    .graphicsLayer(
+//                        translationX = -animatedValueX2 + 20f,
+//                        translationY = -animatedValueY2,
+//                        rotationZ = animatedValueRotation2,
+//                    ),
+//                painter = painterResource(id = R.drawable.branch_2),
+//                contentDescription = "plant 1",)
+
+            Image(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(0.dp, 10.dp, 0.dp, 0.dp)
+                    .graphicsLayer(
+                        translationX = -animatedValueX,
+                        translationY = -animatedValueY,
+                        rotationZ = animatedValueRotation,
+                    ),
+                painter = painterResource(id = R.drawable.branch_2_2),
+                contentDescription = "plant 1",)
+
+            Image(
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(0.dp, 150.dp, 0.dp, 0.dp)
+                    .graphicsLayer(
+                        translationX = -animatedValueX,
+                        translationY = -animatedValueY,
+                        rotationZ = animatedValueRotation,
+                    ),
+                painter = painterResource(id = R.drawable.branch3),
+                contentDescription = "plant 1",)
+
+        }
+
+
         Column(modifier = Modifier
             .padding(0.dp, 0.dp, 0.dp, 20.dp)
             .fillMaxWidth().fillMaxHeight(),
@@ -199,6 +281,8 @@ fun LoginScreen(navController: NavController){
                 singleLine = true,
                 shape = RoundedCornerShape(30.dp),
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.background,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.background,
                     cursorColor = MaterialTheme.colorScheme.onBackground, // Set the color of the cursor
                     focusedBorderColor = MaterialTheme.colorScheme.onBackground, // Set focused border color to transparent
                     unfocusedBorderColor = Color.LightGray, // Set border color to transparent
@@ -217,7 +301,8 @@ fun LoginScreen(navController: NavController){
 
             // password
             OutlinedTextField(
-                modifier = Modifier.align(Alignment.CenterHorizontally),
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally),
                 value = password,
                 onValueChange = {
                     password = it
@@ -227,6 +312,8 @@ fun LoginScreen(navController: NavController){
                 singleLine = true,
                 shape = RoundedCornerShape(30.dp),
                 colors = OutlinedTextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.background,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.background,
                     cursorColor = MaterialTheme.colorScheme.onBackground, // Set the color of the cursor
                     focusedBorderColor = MaterialTheme.colorScheme.onBackground, // Set focused border color to transparent
                     unfocusedBorderColor = Color.LightGray, // Set border color to transparent
@@ -234,7 +321,7 @@ fun LoginScreen(navController: NavController){
                     unfocusedLabelColor = Color.LightGray,
                 ),
                 visualTransformation =
-                    if (passwordHidden) PasswordVisualTransformation() else VisualTransformation.None,
+                if (passwordHidden) PasswordVisualTransformation() else VisualTransformation.None,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 trailingIcon = {
                     IconButton(onClick = { passwordHidden = !passwordHidden }) {
@@ -318,87 +405,6 @@ fun LoginScreen(navController: NavController){
                     )
                 }
             }
-        }
-
-        Box(modifier = Modifier,
-            contentAlignment = Alignment.TopEnd,){
-
-            Image(
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .graphicsLayer(
-                        translationX = animatedValueX2 + 20f,
-                        translationY = animatedValueY2,
-                        rotationZ = animatedValueRotation2,
-                    ),
-                painter = painterResource(id = R.drawable.branch_2),
-                contentDescription = "branch 1",)
-
-        }
-
-        Card(
-            modifier = Modifier.padding(0.dp, 80.dp, 0.dp, 0.dp).wrapContentSize(align = Alignment.TopCenter),
-            elevation = CardDefaults.elevatedCardElevation(
-                defaultElevation = 8.dp
-            ), // Set elevation value for the card
-            shape = RoundedCornerShape(30.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.primaryContainer
-            ),
-        ) {
-            Text(
-                modifier = Modifier
-                    .background(MaterialTheme.colorScheme.primaryContainer)
-                    .clip(RoundedCornerShape(20.dp))
-                    .padding(20.dp, 8.dp, 20.dp, 8.dp),
-                text = "Smart Garden",
-                fontSize = 36.sp,
-                fontWeight = FontWeight.Bold,
-                fontFamily = FontFamily(Font(R.font.rubik, FontWeight.Bold)),
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-            )
-        }
-
-        Box(modifier = Modifier
-            .padding(),
-            contentAlignment = Alignment.TopStart,){
-
-//            Image(
-//                modifier = Modifier
-//                    .align(Alignment.TopStart)
-//                    .scale(1f)
-//                    .graphicsLayer(
-//                        translationX = -animatedValueX2 + 20f,
-//                        translationY = -animatedValueY2,
-//                        rotationZ = animatedValueRotation2,
-//                    ),
-//                painter = painterResource(id = R.drawable.branch_2),
-//                contentDescription = "plant 1",)
-
-            Image(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(0.dp, 10.dp, 0.dp, 0.dp)
-                    .graphicsLayer(
-                        translationX = -animatedValueX,
-                        translationY = -animatedValueY,
-                        rotationZ = animatedValueRotation,
-                    ),
-                painter = painterResource(id = R.drawable.branch_2_2),
-                contentDescription = "plant 1",)
-
-            Image(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(0.dp, 150.dp, 0.dp, 0.dp)
-                    .graphicsLayer(
-                        translationX = -animatedValueX,
-                        translationY = -animatedValueY,
-                        rotationZ = animatedValueRotation,
-                    ),
-                painter = painterResource(id = R.drawable.branch3),
-                contentDescription = "plant 1",)
-
         }
     }
 }
