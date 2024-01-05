@@ -12,6 +12,7 @@ import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.graphics.vector.PathNode
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
@@ -72,6 +73,7 @@ class MainViewModel @Inject constructor(
     // Visible Chart
     var animationChartIsRunning = false
     val chart = MutableLiveData<ChartObject>()
+    var lastListPathNode = listOf<PathNode>()
 
     fun init(){
         connected.value = dataInternalRepository.getConnected()
@@ -236,18 +238,7 @@ class MainViewModel @Inject constructor(
                         raspberryConnection.sourceFilePath      = path
                         raspberryConnection.raspberryIp         = raspberry["ip"].toString()
                         raspberryConnection.raspberryUsername   = raspberry["username"].toString()
-
-                        // Send file
-                        // TODO test
-                        delay(3000)
-                        updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.START_CONFIGURED)
-                        //raspberryConnection.sendConfigFile()
-                        delay(3000)
-                        updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.END_CONFIGURED)
-                        delay(3000)
-                        updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.FINISHED)
-                        delay(3000)
-                        updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.CLOSE)
+                        raspberryConnection.sendConfigFile()
                     }
                 }
             }
@@ -306,7 +297,7 @@ class MainViewModel @Inject constructor(
         val fileName = "configuratorFile${auth.currentUser?.uid}.txt"
         val fileContent =
             "user_uid:${auth.currentUser?.uid}\n" +
-                    "garden_key:${garden["id"]}"
+                    "garden_key:${garden["id"]}\n"
 
         val file = File(filesDirInternal, fileName)
 
@@ -320,6 +311,6 @@ class MainViewModel @Inject constructor(
             println("Error creating the file: ${e.message}")
             return ""
         }
-        return fileName
+        return file.absolutePath
     }
 }

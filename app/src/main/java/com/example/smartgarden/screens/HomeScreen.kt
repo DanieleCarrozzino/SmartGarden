@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.togetherWith
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -91,7 +92,10 @@ fun HomeScreen(navController: NavController){
                 ) {
 
                     Surface(
-                        modifier = Modifier.weight(1f).padding(10.dp).aspectRatio(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(10.dp)
+                            .aspectRatio(1f),
                         shadowElevation = 4.dp,
                         tonalElevation = 4.dp,
                         shape = RoundedCornerShape(20.dp),
@@ -136,7 +140,10 @@ fun HomeScreen(navController: NavController){
                     }
 
                     Surface(
-                        modifier = Modifier.weight(1f).padding(10.dp).aspectRatio(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(10.dp)
+                            .aspectRatio(1f),
                         shadowElevation = 4.dp,
                         tonalElevation = 4.dp,
                         shape = RoundedCornerShape(20.dp),
@@ -176,6 +183,11 @@ fun HomeScreen(navController: NavController){
                     .fillMaxWidth()
                     .background(MaterialTheme.colorScheme.background)
             ){
+
+                Image(
+                    modifier = Modifier.fillMaxSize().background(Color.Red),
+                    painter = ChatBoxWithArrayAnimated(),
+                    contentDescription = "Painter animated")
 
             }
             Card(

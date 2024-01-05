@@ -1,29 +1,23 @@
 package com.example.smartgarden.manager
 
 import android.content.Context
-import android.net.wifi.ScanResult
-import android.net.wifi.WifiManager
 import android.util.Log
 import androidx.camera.core.ExperimentalGetImage
 import androidx.camera.core.ImageAnalysis
 import androidx.camera.core.ImageProxy
-import androidx.compose.ui.platform.LocalContext
-import androidx.core.content.ContextCompat.getSystemService
 import com.google.mlkit.vision.barcode.BarcodeScanner
 import com.google.mlkit.vision.barcode.BarcodeScannerOptions
 import com.google.mlkit.vision.barcode.BarcodeScanning
 import com.google.mlkit.vision.barcode.common.Barcode
 import com.google.mlkit.vision.common.InputImage
-import com.jcraft.jsch.ChannelExec
+import com.jcraft.jsch.Channel
+import com.jcraft.jsch.ChannelSftp
 import com.jcraft.jsch.JSch
 import com.jcraft.jsch.Session
 import dagger.hilt.android.qualifiers.ApplicationContext
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
-import java.io.BufferedInputStream
-import java.io.BufferedOutputStream
 import java.io.File
 import java.io.FileInputStream
 import javax.inject.Inject
@@ -44,11 +38,11 @@ class RaspberryConnectionManager @Inject constructor(
         CLOSE,
     }
 
-    val password = "password"
+    val password = "daniele"
     lateinit var raspberryIp : String
     lateinit var raspberryUsername : String
     lateinit var sourceFilePath : String // File to be transferred from local to remote
-    val destinationDirectory = "/path/to/destination/directory" // Destination directory on remote
+    val destinationDirectory = "/home/daniele/Projects/RaspGarden/configuration/files/" // Destination directory on remote
 
     /**
      * @param host raspberry ip
@@ -56,6 +50,11 @@ class RaspberryConnectionManager @Inject constructor(
     suspend fun sendConfigFile() {
         withContext(Dispatchers.IO){
             try {
+
+                // Layout
+                delay(2000)
+                callback(RaspberryStatus.START_CONFIGURED, "")
+
                 val jsch = JSch()
                 val session: Session = jsch.getSession(raspberryUsername, raspberryIp, 22)
                 session.setPassword(password)
@@ -64,49 +63,25 @@ class RaspberryConnectionManager @Inject constructor(
                 session.setConfig("StrictHostKeyChecking", "no")
                 session.connect()
 
-                // Connected
-                callback(RaspberryStatus.START_CONFIGURED, "")
-
-                // Establish a channel for SCP
-                val channel = session.openChannel("exec") as ChannelExec
-                val command = "scp -t $destinationDirectory"
-                (channel as ChannelExec).setCommand(command)
-
-                // Get I/O streams for sending/receiving data
-                val out = channel.outputStream
-                val `in` = channel.inputStream
-
+                //SFTP setup
+                val channel: Channel = session.openChannel("sftp")
                 channel.connect()
 
-                // Construct the SCP command to send a file
-                val header = "C0644 ${File(sourceFilePath).length()} "
-                val commandToSend = "scp -t $destinationDirectory"
+                val channelsftp = channel as ChannelSftp
+                channelsftp.cd(destinationDirectory)
 
-                // Send the command header
-                out.write("$header$sourceFilePath\n".toByteArray())
-                out.flush()
-
-                // Transfer file content
-                val fis = FileInputStream(sourceFilePath)
-                val bis = BufferedInputStream(fis)
-                val bos = BufferedOutputStream(out)
-
-                val buf = ByteArray(1024)
-                var len: Int
-                while (bis.read(buf).also { len = it } > 0) {
-                    bos.write(buf, 0, len)
-                }
-
-                bis.close()
-                fis.close()
-                bos.close()
-
-                channel.disconnect()
-                session.disconnect()
-
-                println("File transferred successfully")
+                // Layout
+                delay(2000)
                 callback(RaspberryStatus.END_CONFIGURED, "")
 
+                val file = File(sourceFilePath)
+                channelsftp.put(FileInputStream(file), file.name)
+
+                channel.disconnect()
+
+                // Layout
+                delay(2000)
+                callback(RaspberryStatus.FINISHED, "")
             } catch (e: Exception) {
                 e.printStackTrace()
             }
