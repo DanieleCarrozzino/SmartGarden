@@ -1,13 +1,13 @@
 package com.example.smartgarden.utility
 
-import android.app.Activity
-import android.content.Context
+import android.content.res.Resources
+import android.graphics.Rect
+import android.view.Window
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.PathNode
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.compose.ui.platform.LocalContext
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
 import java.util.Calendar
@@ -16,13 +16,17 @@ import java.util.Locale
 class Utility {
 
     companion object{
-        fun convertHashMapToJson(hash : HashMap<String, String>) : String{
+        fun convertHashMapToJsonString(hash : HashMap<String, Any>) : String{
             return Gson().toJson(hash).toString()
         }
 
-        fun convertJsonToHashMap(json : String) : HashMap<String, String>{
-            val hashMap: HashMap<String, String> = run {
-                val mapType = object : TypeToken<HashMap<String, String>>() {}.type
+        fun convertHashMapToJson(hash : HashMap<String, String>) : Any{
+            return Gson().toJson(hash)
+        }
+
+        fun convertJsonToHashMap(json : String) : HashMap<String, Any>{
+            val hashMap: HashMap<String, Any> = run {
+                val mapType = object : TypeToken<HashMap<String, Any>>() {}.type
                 Gson().fromJson(json, mapType)
             }
             return hashMap
@@ -138,6 +142,16 @@ class Utility {
 
         private fun lerp(a: Float, b: Float, f: Float): Float {
             return a + f * (b - a)
+        }
+
+        fun getStatusBarSize(resources : Resources) : Int {
+            val statusBarHeightId = resources.getIdentifier("status_bar_height", "dimen", "android")
+            return resources.getDimensionPixelSize(statusBarHeightId)
+        }
+
+        fun getNavigationBarSize(resources : Resources) : Int {
+            val statusBarHeightId = resources.getIdentifier("navigation_bar_height", "dimen", "android")
+            return resources.getDimensionPixelSize(statusBarHeightId)
         }
     }
 

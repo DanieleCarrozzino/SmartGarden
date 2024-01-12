@@ -27,6 +27,13 @@ private val DarkColorScheme = darkColorScheme(
     onPrimaryContainer = WhiteText,
 
     primaryContainer = BlackOpac,
+
+    // Switch colors
+    outline = Gray80,
+    onSecondaryContainer = Black80,
+    surface = color4,
+
+    onSecondary = GreenButtonDark,
 )
 
 private val LightColorScheme = lightColorScheme(
@@ -41,6 +48,13 @@ private val LightColorScheme = lightColorScheme(
     onPrimaryContainer = BlackText,
 
     primaryContainer = WhiteOpac,
+
+    // Switch colors
+    outline = Gray90,
+    onSecondaryContainer = color4_light,
+    surface = color4,
+
+    onSecondary = GreenButton,
 
     /* Other default colors to override
     background = Color(0xFFFFFBFE),

@@ -11,6 +11,8 @@ import androidx.camera.core.ImageProxy
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.vector.PathNode
 import androidx.core.content.ContextCompat
@@ -28,6 +30,7 @@ import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.utility.Utility.Companion.convertJsonToHashMap
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.GenericTypeIndicator
 import com.google.firebase.database.ValueEventListener
 import com.google.firebase.database.values
 import com.google.firebase.messaging.FirebaseMessaging
@@ -60,7 +63,7 @@ class MainViewModel @Inject constructor(
     private val raspberryConnection : RaspberryConnectionManager
 ) : ViewModel() {
 
-    private lateinit var garden : HashMap<String, String>
+    private lateinit var garden : HashMap<String, Any>
 
     val name = mutableStateOf("")
     val date = mutableStateOf("")
@@ -74,11 +77,37 @@ class MainViewModel @Inject constructor(
     var animationChartIsRunning = false
     val chart = MutableLiveData<ChartObject>()
     var lastListPathNode = listOf<PathNode>()
+    val typeChart = MutableLiveData<CHART_TYPE>()
+    var changeScreenClick = false
+
+    // 3 Seek bar values
+    val temperatureValue    = MutableLiveData<Int>()
+    val hydrationValue      = MutableLiveData<Int>()
+    val wellnessValue       = MutableLiveData<Int>()
+
+    // THRESHOLD
+    // hydration perc
+    var percMin = mutableIntStateOf(34)
+    var percMax = mutableIntStateOf(62)
+    var enabled = mutableStateOf(false)
+    var alpha = mutableFloatStateOf(0.3f)
 
     fun init(){
+
+        // To know if I connect myself already to
+        // the raspberry pi
         connected.value = dataInternalRepository.getConnected()
-        animateCharts()
+
+        // Start real time database listener
+        // to keep watch every changes
         startGardenListener()
+
+        // Start charts animation from the values
+        // get from the garden
+        animateCharts()
+
+        // Update firebase token
+        // TODO update firestore and real time database
         retrieveToken()
     }
 
@@ -93,10 +122,17 @@ class MainViewModel @Inject constructor(
                 override fun onDataChange(dataSnapshot: DataSnapshot) {
                     try {
                         val key = dataSnapshot.key
-                        val value = dataSnapshot.getValue(String::class.java)
+                        val value = dataSnapshot.getValue(object : GenericTypeIndicator<HashMap<String, Any>>() {})
 
-                        garden = convertJsonToHashMap(value.toString())
+                        garden = value ?: hashMapOf()
                         garden["id"] = key.toString()
+
+                        Log.d("ViewModel", garden["temperatures"].toString())
+                        Log.d("ViewModel", garden["humidity"].toString())
+                        Log.d("ViewModel", garden["soil_moistures"].toString())
+                        Log.d("ViewModel", garden["avarage_temperature"].toString())
+                        Log.d("ViewModel", garden["avarage_humidity"].toString())
+                        Log.d("ViewModel", garden["avarage_soil_moisture"].toString())
 
                         // Update layout
                         name.value = garden["name"].toString()
@@ -114,9 +150,6 @@ class MainViewModel @Inject constructor(
     }
 
     private fun animateCharts(){
-
-        if(animationChartIsRunning) return
-
         animationChartIsRunning = true
         viewModelScope.launch(Dispatchers.IO) {
             while(true){
@@ -136,8 +169,29 @@ class MainViewModel @Inject constructor(
                         type,
                         type.toString()
                     )
+
+                    // Define type and color
+                    typeChart.value = type
+
+                    // Define 3 main values
+                    temperatureValue.value  = Random.nextInt(1, 100)
+                    hydrationValue.value    = Random.nextInt(1, 100)
+                    wellnessValue.value     = Random.nextInt(1, 100)
+
+                    // TODO remove
+                    connected.value = true
                 }
-                delay(7000)
+
+                /*
+                * Change main screen for a user click
+                * or for timeout
+                * */
+                var count = 0
+                while(count < 700 && !changeScreenClick){
+                    count ++
+                    delay(10)
+                }
+                changeScreenClick = false
             }
         }
     }
@@ -270,7 +324,7 @@ class MainViewModel @Inject constructor(
     /**
      * Get raspberry info
      * */
-    private suspend fun handleQrCode(qrCode : String) : HashMap<String, String>{
+    private suspend fun handleQrCode(qrCode : String) : HashMap<String, Any>{
         val ref = database.getNodeReference("raspberry", listOf(qrCode))
 
         try {
@@ -294,10 +348,10 @@ class MainViewModel @Inject constructor(
     }
 
     private fun createConfiguratorFile() : String{
-        val fileName = "configuratorFile${auth.currentUser?.uid}.txt"
+        val fileName    = "configuratorFile${auth.currentUser?.uid}.txt"
+        garden          = dataInternalRepository.getGarden()
         val fileContent =
-            "user_uid:${auth.currentUser?.uid}\n" +
-                    "garden_key:${garden["id"]}\n"
+            "{\"user_uid\": \"${auth.currentUser?.uid}\",\"garden_id\": \"${garden["id"]}\",  \"user_token\": \"${dataInternalRepository.getToken()}\"}"
 
         val file = File(filesDirInternal, fileName)
 

@@ -11,7 +11,8 @@ import com.example.smartgarden.R
 // Set of Material typography styles to start with
 val QuickSandFont = FontFamily(
     Font(R.font.quicksand_medium, FontWeight.Normal),
-    Font(R.font.quicksand_bold, FontWeight.Bold)
+    Font(R.font.quicksand_bold, FontWeight.Bold),
+    Font(R.font.satisfy_regular, FontWeight.Thin)
 )
 
 // Set of Material typography styles to start with

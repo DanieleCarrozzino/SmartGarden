@@ -32,7 +32,7 @@ class FirebaseFirestoreImpl @Inject constructor() : FirebaseFirestoreInterface {
             }
     }
 
-    override fun setGardens(uid: String, key : String, garden : HashMap<String, String>) {
+    override fun setGardens(uid: String, key : String, garden : HashMap<String, Any>) {
         db.collection(uid).document(key).set(garden)
             .addOnSuccessListener { data ->
                 callback("Success!")

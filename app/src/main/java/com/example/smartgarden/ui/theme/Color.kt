@@ -14,16 +14,35 @@ val White = Color(0xFFFFFFFF)
 val Black = Color(0xFF000000)
 
 val WhiteOpac = Color(0xB2FFFFFF)
-val BlackOpac = Color(0xC6000000)
+val BlackOpac = Color(0xA8000000)
 
 val BlackText = Color(0xFF2E2E2E)
 val WhiteText = Color(0xFFE0E0E0)
 
 val Green = Color(0xFF274109)
-val Green80 = Color(0xFFEBF8DB)
-val Green20 = Color(0xFF404935)
 
-val Blue20 = Color(0x8FA8DEF7)
-val Blue80 = Color(0xFF2196F3)
+val GreenButton = Color(0xFFE0EBD4)
+val GreenButtonDark = Color(0xFF546342)
+
+val Green20 = Color(0x1DCADFB1)
+val Green80 = Color(0xD582A558)
+
+val Blue20 = Color(0x11A8DEF7)
+val Blue80 = Color(0xBC2196F3)
+
+val Orange20 = Color(0x36FCDDB0)
+val Orange80 = Color(0xCBF5AC41)
 
 val Opac = Color(0x3C8B8B8B)
+
+val Green1 = Color(0xFF73DA77)
+val Blue1 = Color(0xFF6AD4E2)
+val Orange1 = Color(0xFFE7B770)
+
+// Switch colors
+val color4 = Color(0xFF8FB2D3)
+val color4_light = Color(0xFFECF3FA)
+val Gray90 = Color(0xFFFCFCFC)
+val Gray80 = Color(0xFFEBEBEB)
+val Black80 = Color(0xFF404040)
+

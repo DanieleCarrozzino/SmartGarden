@@ -9,6 +9,13 @@ import com.example.smartgarden.screens.HomeScreen
 import com.example.smartgarden.screens.InitGardenScreen
 import com.example.smartgarden.screens.InitRaspberryScreen
 import com.example.smartgarden.screens.LoginScreen
+import com.example.smartgarden.screens.ThresholdScreen
+
+sealed class Screen(val route: String) {
+    data object Home : Screen("home")
+    data object Login : Screen("login")
+    data object InitGarden : Screen("init_garden")
+}
 
 @Composable
 fun SetupNavGraph(
@@ -20,17 +27,17 @@ fun SetupNavGraph(
         startDestination = intiRoute,
     ){
         composable(
-            route = "login"
+            route = Screen.Login.route
         ){
             LoginScreen(navController)
         }
         composable(
-            route = "init_garden"
+            route = Screen.InitGarden.route
         ){
             InitGardenScreen(navController)
         }
         composable(
-            route = "home"
+            route = Screen.Home.route
         ){
             HomeScreen(navController = navController)
         }
@@ -43,6 +50,11 @@ fun SetupNavGraph(
             route = "init_config_raspberry"
         ){
             InitRaspberryScreen(navController = navController)
+        }
+        composable(
+            route = "threshold"
+        ){
+            ThresholdScreen(navController = navController)
         }
     }
 }

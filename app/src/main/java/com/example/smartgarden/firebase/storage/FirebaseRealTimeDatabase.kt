@@ -1,6 +1,7 @@
 package com.example.smartgarden.firebase.storage
 
 import com.google.firebase.database.DatabaseReference
+import java.util.Objects
 
 interface FirebaseRealTimeDatabase {
 
@@ -11,12 +12,12 @@ interface FirebaseRealTimeDatabase {
      *
      * @return identifying key of the node
      * */
-    fun insertNode(module : String, childs : List<String>, node : String) : String
+    fun insertNode(module : String, childs : List<String>, node : HashMap<String, Any>) : String
 
     /**
      * Force to write the node inside the given path
      * */
-    fun insertForceNode(module : String, childs : List<String>, node : String)
+    fun insertForceNode(module : String, childs : List<String>, node : HashMap<String, Any>)
 
 
     /**

@@ -182,7 +182,7 @@ fun ListOfGardens(list : List<DocumentSnapshot>){
                     shape = RoundedCornerShape(30.dp, 30.dp, 30.dp, 30.dp)
                 )
                 .clickable {
-                    val garden = hashMapOf(
+                    val garden = hashMapOf<String, Any>(
                         "name" to item["name"].toString(),
                         "id" to item["id"].toString(),
                         "date_creation" to item["date_creation"].toString()

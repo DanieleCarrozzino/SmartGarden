@@ -2,9 +2,10 @@ package com.example.smartgarden
 
 import android.Manifest
 import android.content.pm.PackageManager
+import android.os.Build
 import android.os.Bundle
-import android.util.Log
 import android.view.View
+import android.view.WindowManager
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
@@ -12,6 +13,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.smartgarden.firebase.authentication.FirebaseAuthenticator
@@ -19,7 +23,6 @@ import com.example.smartgarden.navigation.SetupNavGraph
 import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.ui.theme.SmartGardenTheme
 import com.example.smartgarden.viewmodels.LoginViewModel
-import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -42,6 +45,11 @@ class MainActivity : ComponentActivity() {
         // Permissions
         permissions()
 
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+            WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
+        )
+
         var initRoute = "init_garden"
         if(auth.currentUser == null) {
             // set the activity result
@@ -52,6 +60,7 @@ class MainActivity : ComponentActivity() {
         else if(dataInternalRepository.getGarden().size > 0){
             initRoute = "home"
         }
+
 
         setContent {
             SmartGardenTheme {
@@ -80,7 +89,6 @@ class MainActivity : ComponentActivity() {
             ActivityCompat.requestPermissions(this, permissionToRequest.toTypedArray(), 0)
         }
     }
-
 
 }
 

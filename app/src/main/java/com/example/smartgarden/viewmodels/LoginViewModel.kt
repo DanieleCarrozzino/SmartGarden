@@ -31,7 +31,7 @@ class LoginViewModel @Inject constructor(
     // Init garden
     val loadedGarden = mutableStateOf(false)
     var listGardens  = mutableListOf<DocumentSnapshot>()
-    private var garden       = hashMapOf<String, String>()
+    private var garden       = hashMapOf<String, Any>()
     val creationGardenFinished = mutableStateOf(false)
 
     init {
@@ -55,7 +55,7 @@ class LoginViewModel @Inject constructor(
             200 -> {
                 signedIn.value = true
 
-                val user = hashMapOf<String, String>(
+                val user = hashMapOf<String, Any>(
                     "id" to (auth.currentUser?.uid ?: ""),
                     "email" to (auth.currentUser?.email ?: ""),
                     "date_creation" to getCurrentDateTime()
@@ -65,7 +65,7 @@ class LoginViewModel @Inject constructor(
                 database.insertForceNode(
                     "users",
                     listOf<String>(auth.currentUser?.uid ?: ""),
-                    Utility.convertHashMapToJson(user))
+                    user)
             }
             400 -> passwordError.value  = true
             401 -> {} //TODO manage other type of errors
@@ -93,7 +93,7 @@ class LoginViewModel @Inject constructor(
      * Save the new garden or an old one
      * and go on
      * */
-    fun saveGardenAndGoOn(garden : HashMap<String, String>){
+    fun saveGardenAndGoOn(garden : HashMap<String, Any>){
         // Save the new garden
         dataInternalRepository.saveGarden(garden)
         creationGardenFinished.value = true
@@ -118,7 +118,7 @@ class LoginViewModel @Inject constructor(
             val key = database.insertNode(
                 "gardens",
                 listOf<String>(),
-                Utility.convertHashMapToJson(garden))
+                garden)
 
             // Add unique id
             garden["id"] = key

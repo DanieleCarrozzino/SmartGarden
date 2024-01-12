@@ -1,6 +1,8 @@
 package com.example.smartgarden.screens
 
 import android.util.Log
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.TweenSpec
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
@@ -10,21 +12,28 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
+import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +58,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.smartgarden.R
 import com.example.smartgarden.ui.theme.Blue20
+import com.example.smartgarden.ui.theme.Green80
 import com.example.smartgarden.ui.theme.Opac
 import com.example.smartgarden.ui.theme.Purple40
 import com.example.smartgarden.ui.theme.Purple80
@@ -125,10 +135,38 @@ fun SingleChartBox(title : String, perc : Float){
     }
 }
 
-
-
 @Composable
-fun ChartBoxWithArray(array : List<Float>, title : String, perc : Float, color1 : Color, color2 : Color){
+fun ChartBoxWithArrayAnimated(array : List<Float>, color1 : Color, color2 : Color){
+
+    var animateScale by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        animateScale = true
+    }
+
+    val listValues = mutableListOf<Float>()
+
+    for (v in array){
+        val animatedValue by animateFloatAsState(
+            targetValue = if (animateScale) v else 0f,
+            animationSpec = tween(durationMillis = 3000),
+            label = ""
+        )
+        listValues.add(animatedValue)
+    }
+
+    val backgroundColor1 by animateColorAsState(
+        targetValue = color1,
+        animationSpec = TweenSpec(durationMillis = 1000),
+        label = "", // Change these colors as needed
+    )
+
+    val backgroundColor2 by animateColorAsState(
+        targetValue = color2,
+        animationSpec = TweenSpec(durationMillis = 1000),
+        label = "", // Change these colors as needed
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -139,53 +177,168 @@ fun ChartBoxWithArray(array : List<Float>, title : String, perc : Float, color1 
             .fillMaxSize()){
 
             // Get the random path
-            val path = getPath(array, size)
+            val path = getPath(listValues, size)
 
             //This draw the graph point by point
             drawPath(
                 path = path,
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        color1,
-                        color2
+                        backgroundColor1,
+                        backgroundColor2
                     ),
                     endY = size.height))
         }
+    }
+}
 
 
+@Composable
+fun ChartBoxInfo(title : String, perc : Float, imageId : Int, max : Float, min : Float, symbol : String){
+
+    val cornerShape = 14.dp
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+
+        // MAX
         Surface(
-            shape = RoundedCornerShape(14.dp),
+            shape = RoundedCornerShape(cornerShape),
             modifier = Modifier
                 .padding(5.dp)
-                .align(Alignment.BottomCenter)
-                .fillMaxWidth(),
+                .align(Alignment.TopStart)
+                .wrapContentWidth(),
             color = Opac,
         ) {
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                Text(
-                    text = title,
-                    modifier = Modifier
-                        .padding(4.dp, 2.dp),
-                    textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    fontWeight = FontWeight.Bold,
-                    lineHeight = 15.sp
-                )
-                Text(
-                    text = "${DecimalFormat("##.##").format(perc)}%",
-                    modifier = Modifier,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                    lineHeight = 22.sp,
-                    fontSize = if (perc > 1000f) 18.sp else if (perc > 100f) 21.sp else 23.sp
-                )
-            }
+            Row(verticalAlignment = Alignment.CenterVertically) {
 
+                Box(modifier = Modifier
+                    .padding(3.dp)
+                    .clip(RoundedCornerShape(cornerShape))
+                    .background(MaterialTheme.colorScheme.background)){
+                    Text(
+                        modifier = Modifier.padding(4.dp),
+                        text = String.format("%.2f", max) + symbol,
+                        textAlign = TextAlign.Start,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp)
+                }
+
+                Text(
+                    modifier = Modifier
+                        .padding(3.dp, 3.dp, 6.dp, 3.dp),
+                    text = "Max",
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp)
+
+            }
         }
+
+        // MIN
+        Surface(
+            shape = RoundedCornerShape(cornerShape),
+            modifier = Modifier
+                .padding(5.dp)
+                .align(Alignment.BottomStart)
+                .wrapContentWidth(),
+            color = Opac,
+        ) {
+
+            Row(verticalAlignment = Alignment.CenterVertically) {
+
+                Box(modifier = Modifier
+                    .padding(3.dp)
+                    .clip(RoundedCornerShape(cornerShape))
+                    .background(MaterialTheme.colorScheme.background)){
+                    Text(
+                        modifier = Modifier.padding(4.dp),
+                        text = String.format("%.2f", min) + symbol,
+                        textAlign = TextAlign.Start,
+                        color = MaterialTheme.colorScheme.onPrimaryContainer,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp)
+                }
+
+                Text(
+                    modifier = Modifier
+                        .padding(3.dp, 3.dp, 6.dp, 3.dp),
+                    text = "Min",
+                    textAlign = TextAlign.Center,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp)
+
+            }
+        }
+
+//        // Main panel
+//        Surface(
+//            shape = RoundedCornerShape(cornerShape),
+//            modifier = Modifier
+//                .padding(5.dp)
+//                .align(Alignment.TopStart)
+//                .fillMaxWidth(0.5f)
+//                .wrapContentHeight(),
+//            color = Opac,
+//        ) {
+//
+//
+//            Column(modifier = Modifier) {
+//
+//                Row(verticalAlignment = Alignment.Top,
+//                    modifier = Modifier.padding(10.dp, 8.dp)) {
+//                    Image(
+//                        modifier = Modifier
+//                            .width(50.dp)
+//                            .aspectRatio(1f),
+//                        painter = painterResource(id = imageId),
+//                        contentDescription = "Image chart")
+//
+//                    Column(
+//                        horizontalAlignment = Alignment.Start,
+//                        modifier = Modifier.padding(5.dp, 0.dp)
+//                    ) {
+//                        Text(
+//                            text = title,
+//                            modifier = Modifier
+//                                .padding(4.dp, 0.dp)
+//                                .fillMaxWidth(),
+//                            textAlign = TextAlign.Center,
+//                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+//                            fontWeight = FontWeight.Bold,
+//                            lineHeight = 14.sp
+//                        )
+//                        Text(
+//                            text = "${DecimalFormat("##.##").format(perc)}%",
+//                            modifier = Modifier
+//                                .padding(4.dp, 0.dp)
+//                                .fillMaxWidth(),
+//                            textAlign = TextAlign.Center,
+//                            fontWeight = FontWeight.Bold,
+//                            color = MaterialTheme.colorScheme.onPrimaryContainer,
+//                            lineHeight = 22.sp,
+//                            fontSize = if (perc > 1000f) 18.sp else if (perc > 100f) 21.sp else 23.sp
+//                        )
+//                    }
+//                }
+//                Text(
+//                    text = "Little description to create a fake description and info",
+//                    modifier = Modifier
+//                        .padding(10.dp, 0.dp, 10.dp, 10.dp)
+//                        .fillMaxWidth(),
+//                    textAlign = TextAlign.Start,
+//                    color = MaterialTheme.colorScheme.onPrimaryContainer,
+//                    fontWeight = FontWeight.Bold,
+//                    lineHeight = 13.sp
+//                )
+//            }
+//        }
     }
 }
 
@@ -197,7 +350,6 @@ fun ChatBoxWithArrayAnimated() : Painter{
 
     // 0 or 1
     val pos = (chart?.type?.ordinal ?: 0f).toFloat() % 2
-    Log.d("ViewModel", pos.toString())
 
     return rememberVectorPainter(
         defaultWidth = 22.dp,
@@ -220,9 +372,6 @@ fun ChatBoxWithArrayAnimated() : Painter{
         val array = mutableListOf<List<PathNode>>(listOf(), listOf())
         array[pos.toInt()] = path
         array[((pos + 1) % 2).toInt()] = viewModel.lastListPathNode
-
-        Log.d("ViewModel", array[0].toString())
-        Log.d("ViewModel", array[1].toString())
 
         val pathNodes = try {
             lerp(viewModel.lastListPathNode, path, fraction)

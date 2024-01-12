@@ -60,6 +60,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -73,6 +74,8 @@ import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.example.smartgarden.R
 import com.example.smartgarden.manager.RaspberryConnectionManager
+import com.example.smartgarden.navigation.Screen
+import com.example.smartgarden.utility.Utility
 import com.example.smartgarden.viewmodels.MainViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -87,6 +90,10 @@ fun ConfigRaspberryScreen(navController: NavController){
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
+    // Status bar height
+    val density = LocalDensity.current.density
+    val statusHeight = Utility.getStatusBarSize(context.resources) / density
+
     val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
 
     val previewView = PreviewView(context)
@@ -96,7 +103,7 @@ fun ConfigRaspberryScreen(navController: NavController){
     )
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().padding(0.dp, statusHeight.dp, 0.dp, 0.dp),
         color = MaterialTheme.colorScheme.background
     ) {
         AndroidView(
@@ -225,8 +232,16 @@ fun BottomStatusAnimated(navController: NavController){
                     title = "Finished!"
                 }
                 RaspberryConnectionManager.RaspberryStatus.CLOSE -> {
-                    if(!close)
-                        navController.popBackStack()
+                    val route = navController.previousBackStackEntry?.destination?.route
+                    if(route == Screen.Home.route){
+                        if(!close)
+                            navController.popBackStack()
+                    }
+                    else {
+                        if(!close)
+                            navController.navigate(Screen.Home.route)
+                    }
+
                     close = true
                     Box(){}
                     return@AnimatedContent

@@ -8,7 +8,7 @@ class FirebaseRealTimeDatabaseImpl : FirebaseRealTimeDatabase {
     /* Main object */
     val database = FirebaseDatabase.getInstance("https://smartgarden-d7604-default-rtdb.europe-west1.firebasedatabase.app/")
 
-    override fun insertNode(module : String, childs : List<String>, node : String) : String{
+    override fun insertNode(module : String, childs : List<String>, node : HashMap<String, Any>) : String{
         // build the path
         val ref = getReference(module, childs)
 
@@ -16,6 +16,7 @@ class FirebaseRealTimeDatabaseImpl : FirebaseRealTimeDatabase {
         val newRef = ref.push()
         // get the id of the new node
         val key = newRef.key
+
         // add value
         newRef.setValue(node)
 
@@ -23,7 +24,7 @@ class FirebaseRealTimeDatabaseImpl : FirebaseRealTimeDatabase {
         return key ?: ""
     }
 
-    override fun insertForceNode(module : String, childs : List<String>, node : String){
+    override fun insertForceNode(module : String, childs : List<String>, node : HashMap<String, Any>){
         // build the path
         val ref = getReference(module, childs)
 

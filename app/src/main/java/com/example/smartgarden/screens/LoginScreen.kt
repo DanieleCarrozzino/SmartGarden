@@ -80,7 +80,7 @@ const val animation_login_duration = 15000
 @Composable
 fun LoginScreen(navController: NavController){
 
-    val viewModel       = hiltViewModel<LoginViewModel>()
+    val viewModel = hiltViewModel<LoginViewModel>()
 
     val signedIn by remember {
         viewModel.signedIn
@@ -418,11 +418,11 @@ fun ButtonSignIn(modifier: Modifier, signIn : () -> Unit, id_icon : Int = -1){
         ), // Set elevation value for the card
         shape = RoundedCornerShape(30.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.onPrimary
+            containerColor = MaterialTheme.colorScheme.onSecondary
         ),
     ) {
         Row(modifier = Modifier
-            .background(MaterialTheme.colorScheme.onPrimary)
+            .background(MaterialTheme.colorScheme.onSecondary)
             .clickable {
                 signIn()
             }

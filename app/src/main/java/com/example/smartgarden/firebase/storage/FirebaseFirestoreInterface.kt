@@ -24,7 +24,7 @@ interface FirebaseFirestoreInterface {
     /**
      * Set gardens of a specific uid user
      * */
-    fun setGardens(uid : String, key : String, garden : HashMap<String, String>)
+    fun setGardens(uid : String, key : String, garden : HashMap<String, Any>)
 
     /**
      * Save firebase messaging token
