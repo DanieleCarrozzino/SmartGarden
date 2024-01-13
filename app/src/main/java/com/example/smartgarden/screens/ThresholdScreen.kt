@@ -155,22 +155,6 @@ fun MainThresholdLayout(width : Dp, viewModel: ThresholdViewModel){
 @Composable
 fun TemperatureThreshold(width : Dp, viewModel: ThresholdViewModel){
 
-    val alpha by remember {
-        viewModel.alphaTemperature
-    }
-
-    val perc1 by remember {
-        viewModel.percMinTemperature
-    }
-
-    val perc2 by remember {
-        viewModel.percMaxTemperature
-    }
-
-    val enabled by remember {
-        viewModel.enabledTemperature
-    }
-
     Column() {
 
         Text(
@@ -193,20 +177,21 @@ fun TemperatureThreshold(width : Dp, viewModel: ThresholdViewModel){
             } else viewModel.alphaTemperature.floatValue = 0.3f
         }
 
-        Column(modifier = Modifier.alpha(alpha)) {
-            Text(text = "Gestione dei limiti di temperatura massimi e minimi",
-                modifier = Modifier.padding(10.dp, 0.dp))
+        Text(text = "Gestione dei limiti di temperatura massimi e minimi",
+            modifier = Modifier.padding(10.dp, 0.dp))
 
-            val circleSize      = 80.dp
-            val marginCircles   = 20.dp
-            DoubleSeekBar(width, perc1, perc2, viewModel.enabledTemperature, circleSize, marginCircles, "℃"){ value, type ->
-                when(type){
-                    0 -> {
-                        viewModel.percMinTemperature.intValue = value
-                    }
-                    1 -> {
-                        viewModel.percMaxTemperature.intValue = value
-                    }
+        val circleSize      = 80.dp
+        val marginCircles   = 20.dp
+        DoubleSeekBar(
+            width,
+            viewModel.percMinTemperature, viewModel.percMaxTemperature,
+            viewModel.enabledTemperature, circleSize, marginCircles, "℃"){ value, type ->
+            when(type){
+                0 -> {
+                    viewModel.percMinTemperature.intValue = value
+                }
+                1 -> {
+                    viewModel.percMaxTemperature.intValue = value
                 }
             }
         }
@@ -215,18 +200,6 @@ fun TemperatureThreshold(width : Dp, viewModel: ThresholdViewModel){
 
 @Composable
 fun HydrationThreshold(width : Dp, viewModel: ThresholdViewModel){
-
-    val perc1 by remember {
-        viewModel.percMin
-    }
-
-    val perc2 by remember {
-        viewModel.percMax
-    }
-
-    val enabled by remember {
-        viewModel.enabled
-    }
 
     // Hydration double seek bar
     Column {
@@ -243,7 +216,10 @@ fun HydrationThreshold(width : Dp, viewModel: ThresholdViewModel){
 
         val circleSize      = 80.dp
         val marginCircles   = 20.dp
-        DoubleSeekBar(width, perc1, perc2, viewModel.enabled, circleSize, marginCircles, "%"){ value, type ->
+        DoubleSeekBar(
+            width,
+            viewModel.percMin, viewModel.percMax,
+            viewModel.enabled, circleSize, marginCircles, "%"){ value, type ->
             when(type){
                 0 -> {
                     viewModel.percMin.intValue = value
@@ -260,7 +236,7 @@ fun HydrationThreshold(width : Dp, viewModel: ThresholdViewModel){
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
 fun DoubleSeekBar(width : Dp,
-                  perc1 : Int, perc2 : Int,
+                  percMin : MutableState<Int>, percMax : MutableState<Int>,
                   enable : MutableState<Boolean>,
                   circleSize : Dp, marginCircles : Dp,
                   symbol : String,
@@ -269,6 +245,14 @@ fun DoubleSeekBar(width : Dp,
 
     val density = LocalDensity.current.density
 
+    val perc1 by remember {
+        percMin
+    }
+
+    val perc2 by remember {
+        percMax
+    }
+
     var leftClicked by remember {
         mutableStateOf(false)
     }
@@ -276,13 +260,8 @@ fun DoubleSeekBar(width : Dp,
         mutableStateOf(false)
     }
 
-    var offsetLeft by remember {
-        mutableStateOf(Pair((maxWidth * perc1) / 100 + marginCircles, 0.dp))
-    }
-
-    var offsetRight by remember {
-        mutableStateOf(Pair((maxWidth * perc2) / 100 + marginCircles, 0.dp))
-    }
+    var offsetLeft = Pair((maxWidth * perc1) / 100 + marginCircles, 0.dp)
+    var offsetRight = Pair((maxWidth * perc2) / 100 + marginCircles, 0.dp)
 
     Box(modifier = Modifier
         .padding(0.dp, 15.dp)

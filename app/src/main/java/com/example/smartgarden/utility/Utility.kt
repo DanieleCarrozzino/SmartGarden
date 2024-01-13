@@ -43,8 +43,9 @@ class Utility {
         }
 
         fun getPath(array : List<Float>, size : Size) : Path{
-            // Get max of the array to adapt the chart
-            val max = array.max()
+            // Get max and min of the array to adapt the chart
+            val min = array.min()
+            val max = array.max() - min
             // delta to multiply to every elements inside the array
             val delta  = size.height / max
             // every x step to create a new point path
@@ -57,15 +58,15 @@ class Utility {
                 moveTo(prevOffset.x, prevOffset.y)
 
                 // Start form the first arrayPosition
-                lineTo(prevOffset.x, size.height - array[0] * delta)
+                lineTo(prevOffset.x, size.height - (array[0] - min) * delta)
 
                 for (i in 1 until array.size){
-                    val y = size.height - array[i] * delta
+                    val y = size.height - (array[i] - min) * delta
                     val x = (i * deltaX)
                     quadraticBezierTo(prevOffset.x, prevOffset.y, (x + prevOffset.x) / 2, (y + prevOffset.y) / 2)
                     prevOffset = Offset(x, y)
                 }
-                lineTo(size.width, size.height - array.last() * delta)
+                lineTo(size.width, size.height - (array.last() - min) * delta)
                 lineTo(size.width, size.height)
             }
         }
