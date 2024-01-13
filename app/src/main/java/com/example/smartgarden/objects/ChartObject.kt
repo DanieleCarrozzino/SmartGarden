@@ -29,4 +29,12 @@ enum class CHART_TYPE(private val description : String) {
             SOIL_MOISTURE   -> Pair(Green20, Green80)
         }
     }
+
+    fun getSymbol() : String{
+        return when(this){
+            HUMIDITY        -> "%"
+            TEMPERATURE     -> "℃"
+            SOIL_MOISTURE   -> "%"
+        }
+    }
 }

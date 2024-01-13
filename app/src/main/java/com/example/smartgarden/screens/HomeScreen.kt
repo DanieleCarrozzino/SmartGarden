@@ -111,7 +111,7 @@ fun HomeScreen(navController: NavController){
                         println("Double click detected!")
                     },
                     onPress = {
-                        if(viewModel.connected.value)
+                        if (viewModel.connected.value)
                             viewModel.changeScreenClick = true
                     }
                 )
@@ -134,7 +134,7 @@ fun HomeScreen(navController: NavController){
             ) {
 
                 // type to use to animate
-                val type = viewModel.typeChart.observeAsState().value
+                val chart = viewModel.chart.observeAsState().value
 
                 RoundedImage(
                     viewModel,
@@ -142,7 +142,7 @@ fun HomeScreen(navController: NavController){
                         .width(screenWidth)
                         .aspectRatio(1f)
                         .offset(x = -((screenWidth / 5) * 2), y = -screenHeight / 8),
-                    type ?: CHART_TYPE.HUMIDITY, screenWidth)
+                    chart?.type ?: CHART_TYPE.HUMIDITY, screenWidth)
 
 
                 Column(modifier = Modifier
@@ -152,19 +152,19 @@ fun HomeScreen(navController: NavController){
                     .padding(0.dp, statusHeight.dp, 0.dp, 0.dp)){
 
                     val alphaTemperature: Float by animateFloatAsState(
-                        if(type == CHART_TYPE.TEMPERATURE) 1f else 0.3f,
+                        if(chart?.type == CHART_TYPE.TEMPERATURE) 1f else 0.3f,
                         label = "",
                         animationSpec = tween(1000)
                     )
 
                     val alphaHumidity: Float by animateFloatAsState(
-                        if(type == CHART_TYPE.HUMIDITY) 1f else 0.3f,
+                        if(chart?.type == CHART_TYPE.HUMIDITY) 1f else 0.3f,
                         label = "",
                         animationSpec = tween(1000)
                     )
 
                     val alphaSoilMoisture: Float by animateFloatAsState(
-                        if(type == CHART_TYPE.SOIL_MOISTURE) 1f else 0.3f,
+                        if(chart?.type == CHART_TYPE.SOIL_MOISTURE) 1f else 0.3f,
                         label = "",
                         animationSpec = tween(1000)
                     )
@@ -217,7 +217,7 @@ fun MainLayout(viewModel : MainViewModel){
             .background(MaterialTheme.colorScheme.background)
     ){
 
-        val type = viewModel.typeChart.observeAsState().value
+        val type = viewModel.chart.observeAsState().value
 
         AnimatedContent(
             targetState = type,
@@ -228,13 +228,14 @@ fun MainLayout(viewModel : MainViewModel){
                         fadeOut(animationSpec = tween(700))
             }
         )
-        { typeInto ->
+        { chart ->
 
-            when(typeInto){
+            when(chart?.type){
                 CHART_TYPE.TEMPERATURE -> {
+                    val temp = chart.values.last().toInt()
                     val info = InfoObject(
                         R.drawable.termometro, R.drawable.sun_into_garden,
-                        "34", "8h",
+                        "$temp${chart.type.getSymbol()}", "8h",
                         "Temperatura attuale del giardino",
                         "Ore di luce continua presa dal giardino"
                     )
@@ -312,19 +313,15 @@ fun MainLayout(viewModel : MainViewModel){
             { chart ->
 
                 var imageId = R.drawable.sun
-                var symbol  = "℃"
                 when(chart?.type){
                     CHART_TYPE.HUMIDITY -> {
                         imageId = R.drawable.humidity
-                        symbol = "%"
                     }
                     CHART_TYPE.TEMPERATURE  -> {
                         imageId = R.drawable.sun
-                        symbol = "℃"
                     }
                     CHART_TYPE.SOIL_MOISTURE  -> {
                         imageId = R.drawable.soil
-                        symbol = "%"
                     }
                     else -> {
 
@@ -335,7 +332,7 @@ fun MainLayout(viewModel : MainViewModel){
                     30f, imageId,
                     chart?.values?.max() ?: 0f,
                     chart?.values?.min() ?: 0f,
-                    symbol
+                    chart?.type?.getSymbol() ?: "%"
                 )
             }
         }
@@ -494,6 +491,10 @@ fun PlaceHolder(viewModel : MainViewModel, navController: NavController){
 @Composable
 fun RoundedImage(viewModel : MainViewModel, modifier: Modifier, type : CHART_TYPE, screenWidth : Dp) {
 
+    val name by remember {
+        viewModel.name
+    }
+
     val backgroundColor by animateColorAsState(
         targetValue = type.getColors().second,
         animationSpec = TweenSpec(durationMillis = 1000),
@@ -537,7 +538,7 @@ fun RoundedImage(viewModel : MainViewModel, modifier: Modifier, type : CHART_TYP
 //        )
     }
     Text(
-        text = "Titolo del giardino",
+        text = name,
         modifier = Modifier
             .width(screenWidth / 2)
             .padding(30.dp, 50.dp, 30.dp, 30.dp),

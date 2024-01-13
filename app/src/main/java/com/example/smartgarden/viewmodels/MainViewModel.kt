@@ -26,6 +26,7 @@ import com.example.smartgarden.firebase.storage.FirebaseRealTimeDatabase
 import com.example.smartgarden.manager.RaspberryConnectionManager
 import com.example.smartgarden.objects.CHART_TYPE
 import com.example.smartgarden.objects.ChartObject
+import com.example.smartgarden.objects.GardenKeys
 import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.utility.Utility.Companion.convertJsonToHashMap
 import com.google.firebase.database.DataSnapshot
@@ -74,7 +75,7 @@ class MainViewModel @Inject constructor(
     val connected           = mutableStateOf(false)
 
     // Visible Chart
-    var animationChartIsRunning = false
+    private var animationChartIsRunning = false
     val chart = MutableLiveData<ChartObject>()
     var lastListPathNode = listOf<PathNode>()
     val typeChart = MutableLiveData<CHART_TYPE>()
@@ -84,13 +85,6 @@ class MainViewModel @Inject constructor(
     val temperatureValue    = MutableLiveData<Int>()
     val hydrationValue      = MutableLiveData<Int>()
     val wellnessValue       = MutableLiveData<Int>()
-
-    // THRESHOLD
-    // hydration perc
-    var percMin = mutableIntStateOf(34)
-    var percMax = mutableIntStateOf(62)
-    var enabled = mutableStateOf(false)
-    var alpha = mutableFloatStateOf(0.3f)
 
     fun init(){
 
@@ -121,8 +115,8 @@ class MainViewModel @Inject constructor(
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(dataSnapshot: DataSnapshot) {
                     try {
-                        val key = dataSnapshot.key
-                        val value = dataSnapshot.getValue(object : GenericTypeIndicator<HashMap<String, Any>>() {})
+                        val key     = dataSnapshot.key
+                        val value   = dataSnapshot.getValue(object : GenericTypeIndicator<HashMap<String, Any>>() {})
 
                         garden = value ?: hashMapOf()
                         garden["id"] = key.toString()
@@ -150,18 +144,52 @@ class MainViewModel @Inject constructor(
     }
 
     private fun animateCharts(){
+
         animationChartIsRunning = true
         viewModelScope.launch(Dispatchers.IO) {
             while(true){
+
+                /*
+                * Get random values
+                * to create a moving chart into
+                * the main screen
+                * */
                 //TODO get real list of values
-                val list = mutableListOf<Float>()
-                for (i in 0 until 10){
+                var list = mutableListOf<Float>()
+                for (i in 0 until 30){
                     list.add(Random.nextFloat() * 50f)
                 }
 
+                // Define the type of the cart
                 val type = CHART_TYPE
                     .entries
                     .toTypedArray()[((chart.value?.type?.ordinal ?: 0) + 1) % CHART_TYPE.entries.size]
+
+                /*
+                * Modify the list depending
+                * on what is the visualized type
+                * of chart
+                * */
+                list = when(type){
+                    /*
+                    * Get the entries of the temperature,
+                    * if the visualizing type is the TEMP
+                    * */
+                    CHART_TYPE.TEMPERATURE -> {
+                        if(garden.containsKey(GardenKeys.Temperatures.key)){
+                            // inside of this list there are
+                            // the last 30 entries of the last
+                            // measures
+                            garden[GardenKeys.Temperatures.key] as MutableList<Float>
+                        }
+                        else
+                            list
+                    }
+                    else -> {
+                        list
+                    }
+                }
+
                 launch(Dispatchers.Main) {
                     //Set the title of the chart and the type
                     chart.value = ChartObject(
@@ -174,7 +202,7 @@ class MainViewModel @Inject constructor(
                     typeChart.value = type
 
                     // Define 3 main values
-                    temperatureValue.value  = Random.nextInt(1, 100)
+                    temperatureValue.value  = list.last().toInt()
                     hydrationValue.value    = Random.nextInt(1, 100)
                     wellnessValue.value     = Random.nextInt(1, 100)
 
@@ -325,6 +353,13 @@ class MainViewModel @Inject constructor(
      * Get raspberry info
      * */
     private suspend fun handleQrCode(qrCode : String) : HashMap<String, Any>{
+
+        // Save the code internally
+        // to be able to modify the settings of this
+        // raspberry
+        dataInternalRepository.saveRaspberryCode(qrCode)
+
+        // Get the ref from the real time database
         val ref = database.getNodeReference("raspberry", listOf(qrCode))
 
         try {
@@ -335,11 +370,11 @@ class MainViewModel @Inject constructor(
                 null
             }
 
-            val value           = dataSnapshot?.getValue(String::class.java)
-            val raspberry       = convertJsonToHashMap(value.toString())
+            // Use GenericTypeIndicator to capture the generic type information
+            val indicator = object : GenericTypeIndicator<HashMap<String, Any>>() {}
 
-            Log.d("ViewModel", "raspberry ip: ${raspberry["ip"].toString()}")
-            return raspberry
+            // Retrieve the value using the GenericTypeIndicator
+            return dataSnapshot?.getValue(indicator) ?: hashMapOf<String, Any>()
         }
         catch(ex : Exception){
             Log.e("ViewModel", ex.message.toString())

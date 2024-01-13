@@ -12,6 +12,7 @@ import com.example.smartgarden.manager.SharedPreferenceManager
 import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.viewmodels.LoginViewModel
 import com.example.smartgarden.viewmodels.MainViewModel
+import com.example.smartgarden.viewmodels.ThresholdViewModel
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -52,6 +53,15 @@ object AppModule {
         dataInternalRepository: DataInternalRepository
     ) : LoginViewModel {
         return LoginViewModel(auth, firestore, database, dataInternalRepository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideThresholdViewModel(
+        database : FirebaseRealTimeDatabase,
+        dataInternalRepository: DataInternalRepository
+    ) : ThresholdViewModel {
+        return ThresholdViewModel(database, dataInternalRepository)
     }
 
     @Provides

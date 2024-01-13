@@ -15,6 +15,8 @@ sealed class Screen(val route: String) {
     data object Home : Screen("home")
     data object Login : Screen("login")
     data object InitGarden : Screen("init_garden")
+
+    data object Threshold : Screen("threshold")
 }
 
 @Composable

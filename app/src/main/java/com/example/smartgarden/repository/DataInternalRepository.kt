@@ -11,6 +11,7 @@ class DataInternalRepository @Inject constructor(
 
     private val GARDEN_KEY      = "garden"
     private val FIREBASE_TOKEN  = "firebase_token"
+    private val RASPBERRY_CODE  = "raspberry_code"
     private val CONNECTED_RASP  = "connected_raspberry"
 
     /**
@@ -48,6 +49,18 @@ class DataInternalRepository @Inject constructor(
 
     fun getConnected() : Boolean{
         return shared.getBoolean(CONNECTED_RASP)
+    }
+
+    /**
+     * Raspberry code got from the
+     * qr code, provisioning phase
+     * */
+    fun saveRaspberryCode(code : String){
+        shared.putString(code, RASPBERRY_CODE)
+    }
+
+    fun getRaspberryCode() : String{
+        return shared.getString(RASPBERRY_CODE)
     }
 
 }

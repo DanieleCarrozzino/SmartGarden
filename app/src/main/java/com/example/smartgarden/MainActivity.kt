@@ -19,6 +19,7 @@ import androidx.core.view.WindowInsetsControllerCompat
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
 import com.example.smartgarden.firebase.authentication.FirebaseAuthenticator
+import com.example.smartgarden.navigation.Screen
 import com.example.smartgarden.navigation.SetupNavGraph
 import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.ui.theme.SmartGardenTheme
@@ -50,15 +51,15 @@ class MainActivity : ComponentActivity() {
             WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS
         )
 
-        var initRoute = "init_garden"
+        var initRoute = Screen.InitGarden.route
         if(auth.currentUser == null) {
             // set the activity result
             // to sign in with google
             auth.setActivityResultLanucher(launcher)
-            initRoute = "login"
+            initRoute = Screen.Login.route
         }
         else if(dataInternalRepository.getGarden().size > 0){
-            initRoute = "home"
+            initRoute = Screen.Home.route
         }
 
 

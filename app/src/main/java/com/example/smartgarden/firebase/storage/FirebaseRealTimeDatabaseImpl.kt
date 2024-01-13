@@ -8,9 +8,9 @@ class FirebaseRealTimeDatabaseImpl : FirebaseRealTimeDatabase {
     /* Main object */
     val database = FirebaseDatabase.getInstance("https://smartgarden-d7604-default-rtdb.europe-west1.firebasedatabase.app/")
 
-    override fun insertNode(module : String, childs : List<String>, node : HashMap<String, Any>) : String{
+    override fun insertNode(module : String, children : List<String>, node : HashMap<String, Any>) : String{
         // build the path
-        val ref = getReference(module, childs)
+        val ref = getReference(module, children)
 
         // Create the space
         val newRef = ref.push()
@@ -24,21 +24,29 @@ class FirebaseRealTimeDatabaseImpl : FirebaseRealTimeDatabase {
         return key ?: ""
     }
 
-    override fun insertForceNode(module : String, childs : List<String>, node : HashMap<String, Any>){
+    override fun insertForceNode(module : String, children : List<String>, node : HashMap<String, Any>){
         // build the path
-        val ref = getReference(module, childs)
+        val ref = getReference(module, children)
 
         //Insert node
         ref.setValue(node)
     }
 
-    override fun getNodeReference(module : String, childs : List<String>) : DatabaseReference {
-        return getReference(module, childs)
+    override fun updateNode(module : String, children : List<String>, node : HashMap<String, Any>){
+        // build the path
+        val ref = getReference(module, children)
+
+        //Insert node
+        ref.updateChildren(node)
     }
 
-    private fun getReference(module : String, childs : List<String>) : DatabaseReference{
+    override fun getNodeReference(module : String, children : List<String>) : DatabaseReference {
+        return getReference(module, children)
+    }
+
+    private fun getReference(module : String, children : List<String>) : DatabaseReference{
         var ref = database.getReference(module)
-        for(child in childs){
+        for(child in children){
             ref = ref.child(child)
         }
         return ref

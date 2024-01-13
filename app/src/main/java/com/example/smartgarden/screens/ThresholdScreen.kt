@@ -5,6 +5,8 @@ import android.view.MotionEvent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
@@ -32,6 +34,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
@@ -43,7 +48,11 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.PointerInputChange
+import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalConfiguration
@@ -64,10 +73,11 @@ import com.example.smartgarden.ui.theme.Green
 import com.example.smartgarden.ui.theme.Pink40
 import com.example.smartgarden.utility.Utility
 import com.example.smartgarden.viewmodels.MainViewModel
+import com.example.smartgarden.viewmodels.ThresholdViewModel
 
 @Composable
 fun ThresholdScreen(navController: NavController){
-    val viewModel       = hiltViewModel<MainViewModel>()
+    val viewModel       = hiltViewModel<ThresholdViewModel>()
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
@@ -76,6 +86,12 @@ fun ThresholdScreen(navController: NavController){
     val density = LocalDensity.current.density
     val statusHeight = Utility.getStatusBarSize(LocalContext.current.resources) / density
     val navigationHeight = Utility.getNavigationBarSize(LocalContext.current.resources) / density
+
+    DisposableEffect(true) {
+        onDispose {
+            viewModel.changeLimits()
+        }
+    }
 
     Surface(modifier = Modifier
         .fillMaxSize(),
@@ -91,7 +107,7 @@ fun ThresholdScreen(navController: NavController){
 }
 
 @Composable
-fun MainThresholdLayout(width : Dp, viewModel: MainViewModel){
+fun MainThresholdLayout(width : Dp, viewModel: ThresholdViewModel){
 
     val alpha by remember {
         viewModel.alpha
@@ -113,19 +129,105 @@ fun MainThresholdLayout(width : Dp, viewModel: MainViewModel){
             color = MaterialTheme.colorScheme.onBackground
         )
         SwitchWithDescription(
-            text = "Modificare questi valori comporterà l'alterazione e il funzionamenot del giardino, i valori adesso impostati sono valori standard molto validi, consigliata la modifica alle sole persone competenti")
+            text = "Modificare questi valori comporterà l'alterazione e il funzionamenot del giardino, i valori adesso impostati sono valori standard molto validi, consigliata la modifica alle sole persone competenti",
+            checked = viewModel.enabled.value
+            )
+        {
+            viewModel.enabled.value = it
+            if(it){
+                viewModel.alpha.floatValue = 1f
+            } else viewModel.alpha.floatValue = 0.3f
+        }
 
-        Box(modifier = Modifier
+        Column(modifier = Modifier
             .alpha(alpha)
             .focusable(enabled)){
+
             // Hydration threshold, min and max
-            HydrationThreshold(width)
+            HydrationThreshold(width, viewModel)
+
+            // Temperature updates
+            TemperatureThreshold(width, viewModel)
         }
     }
 }
 
 @Composable
-fun HydrationThreshold(width : Dp){
+fun TemperatureThreshold(width : Dp, viewModel: ThresholdViewModel){
+
+    val alpha by remember {
+        viewModel.alphaTemperature
+    }
+
+    val perc1 by remember {
+        viewModel.percMinTemperature
+    }
+
+    val perc2 by remember {
+        viewModel.percMaxTemperature
+    }
+
+    val enabled by remember {
+        viewModel.enabledTemperature
+    }
+
+    Column() {
+
+        Text(
+            text = "Temperature values",
+            modifier = Modifier
+                .padding(10.dp),
+            fontWeight = FontWeight.Bold,
+            fontSize = 20.sp,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+
+        SwitchWithDescription(
+            text = "Activate notifications to stay informed about temperature updates, whether it reaches a maximum or minimum value",
+            checked = viewModel.enabledTemperature.value
+        )
+        {
+            viewModel.enabledTemperature.value = it
+            if(it){
+                viewModel.alphaTemperature.floatValue = 1f
+            } else viewModel.alphaTemperature.floatValue = 0.3f
+        }
+
+        Column(modifier = Modifier.alpha(alpha)) {
+            Text(text = "Gestione dei limiti di temperatura massimi e minimi",
+                modifier = Modifier.padding(10.dp, 0.dp))
+
+            val circleSize      = 80.dp
+            val marginCircles   = 20.dp
+            DoubleSeekBar(width, perc1, perc2, viewModel.enabledTemperature, circleSize, marginCircles, "℃"){ value, type ->
+                when(type){
+                    0 -> {
+                        viewModel.percMinTemperature.intValue = value
+                    }
+                    1 -> {
+                        viewModel.percMaxTemperature.intValue = value
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun HydrationThreshold(width : Dp, viewModel: ThresholdViewModel){
+
+    val perc1 by remember {
+        viewModel.percMin
+    }
+
+    val perc2 by remember {
+        viewModel.percMax
+    }
+
+    val enabled by remember {
+        viewModel.enabled
+    }
+
     // Hydration double seek bar
     Column {
         Text(
@@ -138,19 +240,34 @@ fun HydrationThreshold(width : Dp){
         )
         Text(text = "Gestione dei limiti di irrigazioni massimi e minimi",
             modifier = Modifier.padding(10.dp, 0.dp))
-        DoubleSeekBar(width)
+
+        val circleSize      = 80.dp
+        val marginCircles   = 20.dp
+        DoubleSeekBar(width, perc1, perc2, viewModel.enabled, circleSize, marginCircles, "%"){ value, type ->
+            when(type){
+                0 -> {
+                    viewModel.percMin.intValue = value
+                }
+                1 -> {
+                    viewModel.percMax.intValue = value
+                }
+            }
+        }
     }
 }
 
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun DoubleSeekBar(width : Dp){
-
-    val viewModel       = hiltViewModel<MainViewModel>()
-    val circleSize      = 80.dp
-    val marginCircles   = 20.dp
+fun DoubleSeekBar(width : Dp,
+                  perc1 : Int, perc2 : Int,
+                  enable : MutableState<Boolean>,
+                  circleSize : Dp, marginCircles : Dp,
+                  symbol : String,
+                  offsetFunction : (Int, Int) -> Unit){
     val maxWidth = width - circleSize - (marginCircles * 2)
+
+    val density = LocalDensity.current.density
 
     var leftClicked by remember {
         mutableStateOf(false)
@@ -159,15 +276,6 @@ fun DoubleSeekBar(width : Dp){
         mutableStateOf(false)
     }
 
-    var perc1 by remember {
-        viewModel.percMin
-    }
-
-    var perc2 by remember {
-        viewModel.percMax
-    }
-
-    val density = LocalDensity.current.density
     var offsetLeft by remember {
         mutableStateOf(Pair((maxWidth * perc1) / 100 + marginCircles, 0.dp))
     }
@@ -190,7 +298,7 @@ fun DoubleSeekBar(width : Dp){
                 // to apply the translation to the Box
                 Log.d("Threshold", off.toString())
 
-                if(!viewModel.enabled.value) return@detectTransformGestures
+                if (!enable.value) return@detectTransformGestures
 
                 var x = (off.x / density).dp
                 if (x < marginCircles) x = marginCircles
@@ -199,14 +307,12 @@ fun DoubleSeekBar(width : Dp){
                 if (leftClicked) {
                     if (x > offsetRight.first) x = offsetRight.first
                     offsetLeft = Pair(x, 0.dp)
-                    perc1 = (((x - marginCircles) / maxWidth) * 100).toInt()
+                    offsetFunction((((x - marginCircles) / maxWidth) * 100).toInt(), 0)
                 } else if (rightClicked) {
                     if (x < offsetLeft.first) x = offsetLeft.first
                     offsetRight = Pair(x, 0.dp)
-                    perc2 = (((x - marginCircles) / maxWidth) * 100).toInt()
+                    offsetFunction((((x - marginCircles) / maxWidth) * 100).toInt(), 1)
                 }
-
-
             }
         }
     ){
@@ -226,7 +332,7 @@ fun DoubleSeekBar(width : Dp){
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.background
                 ){
-                    Text(text = "$perc1%",
+                    Text(text = "$perc1$symbol",
                         modifier = Modifier.padding(8.dp),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold)
@@ -243,7 +349,7 @@ fun DoubleSeekBar(width : Dp){
                     shape = RoundedCornerShape(12.dp),
                     color = MaterialTheme.colorScheme.background
                 ){
-                    Text(text = "$perc2%",
+                    Text(text = "$perc2$symbol",
                         modifier = Modifier.padding(8.dp),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold)
@@ -281,6 +387,11 @@ fun DoubleSeekBar(width : Dp){
                     .pointerInteropFilter { event ->
                         when (event.action) {
                             MotionEvent.ACTION_DOWN -> {
+                                rightClicked = false
+                                leftClicked = true
+                            }
+
+                            MotionEvent.ACTION_UP -> {
                                 rightClicked = false
                                 leftClicked = true
                             }
@@ -325,14 +436,7 @@ fun DoubleSeekBar(width : Dp){
 }
 
 @Composable
-fun SwitchWithDescription(text : String = ""){
-
-    val viewModel = hiltViewModel<MainViewModel>()
-
-    // Switch check value
-    val checked by remember {
-        viewModel.enabled
-    }
+fun SwitchWithDescription(text : String = "", checked : Boolean, enableFunction : (Boolean) -> Unit){
 
     val icon: (@Composable () -> Unit)? = if (checked) {
         {
@@ -362,11 +466,7 @@ fun SwitchWithDescription(text : String = ""){
             modifier = Modifier.semantics { contentDescription = "Demo with icon" },
             checked = checked,
             onCheckedChange = {
-                //TODO something to change
-                viewModel.enabled.value = it
-                if(it){
-                    viewModel.alpha.floatValue = 1f
-                } else viewModel.alpha.floatValue = 0.3f
+                enableFunction(it)
                 Log.d("Threshold", "Switch changed value")
             },
             colors = SwitchDefaults.colors(
