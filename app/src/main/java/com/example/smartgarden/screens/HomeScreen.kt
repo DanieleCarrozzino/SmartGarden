@@ -10,6 +10,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +19,7 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -42,6 +44,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
@@ -68,7 +72,6 @@ import com.example.smartgarden.ui.theme.Blue80
 import com.example.smartgarden.ui.theme.Green80
 import com.example.smartgarden.ui.theme.LightBlue
 import com.example.smartgarden.ui.theme.Orange80
-import com.example.smartgarden.ui.theme.color4_light
 import com.example.smartgarden.utility.Utility
 import com.example.smartgarden.viewmodels.MainViewModel
 import kotlin.math.abs
@@ -117,7 +120,7 @@ fun HomeCore(
     navController: NavController,
     statusHeight: Float     = 0f,
     navigationHeight: Float = 0f,
-    screenWidth : Dp        = 400.dp,
+    screenWidth  : Dp       = 400.dp,
     screenHeight : Dp       = 700.dp,
     maxDistanceGesture: Int = 400,
     connections: MutableState<Boolean> = mutableStateOf(true),
@@ -153,9 +156,9 @@ fun HomeCore(
     }
 
     val gestureBubbleAnimation : Float by animateFloatAsState(
-        if(gestureType == MainViewModel.POSITION_TYPE.DEFAULT) 0.8f else 1f,
-        label = "",
-        animationSpec = tween(300)
+        if(gestureType == MainViewModel.POSITION_TYPE.DEFAULT) 0f else 1f,
+        label = "Gesture navigation animation",
+        animationSpec = tween(400)
     )
 
     // State to track whether data has been fetched
@@ -273,7 +276,7 @@ fun HomeCore(
                 MainLayout(
                     charts,
                     maxDistanceGesture,
-                    gestureX.value, gestureY.value
+                    gestureX, gestureY
                 )
             }
             // Place holder
@@ -285,39 +288,39 @@ fun HomeCore(
 
         when(gestureType) {
             MainViewModel.POSITION_TYPE.LEFT -> {
-                directionBoxBig(
+                DirectionBoxBig(
                     Alignment.CenterStart,
                     gestureBubbleAnimation,
                     "BOH?",
                     statusHeight.dp, navigationHeight.dp,
-                    screenWidth / 3,
+                    screenWidth, screenHeight,
                     imageId = R.drawable.webcam)
             }
             MainViewModel.POSITION_TYPE.RIGHT -> {
-                directionBoxBig(
+                DirectionBoxBig(
                     Alignment.CenterEnd,
                     gestureBubbleAnimation,
                     "SWITCH",
                     statusHeight.dp, navigationHeight.dp,
-                    screenWidth / 3,
+                    screenWidth, screenHeight,
                     imageId = R.drawable.off_button)
             }
             MainViewModel.POSITION_TYPE.UP -> {
-                directionBoxBig(
+                DirectionBoxBig(
                     Alignment.TopCenter,
                     gestureBubbleAnimation,
                     "SETTINGS",
                     statusHeight.dp, navigationHeight.dp,
-                    screenWidth / 3,
+                    screenWidth, screenHeight,
                     imageId = R.drawable.cogwheel)
             }
             MainViewModel.POSITION_TYPE.DOWN -> {
-                directionBoxBig(
+                DirectionBoxBig(
                     Alignment.BottomCenter,
                     gestureBubbleAnimation,
                     "CAMERA",
                     statusHeight.dp, navigationHeight.dp,
-                    screenWidth / 3,
+                    screenWidth, screenHeight,
                     imageId = R.drawable.webcam)
             }
             MainViewModel.POSITION_TYPE.DEFAULT -> {}
@@ -327,83 +330,139 @@ fun HomeCore(
 
 @Preview(showBackground = false)
 @Composable
-fun directionBoxPreview(){
-    directionBoxBig(
+fun DirectionBoxPreview(){
+    DirectionBoxBig(
         text = "GARDEN",
         status = 0.dp,
         navigation = 0.dp,
-        width = 140.dp,
-        gestureBubbleAnimation = 1f)
+        width = 400.dp,
+        height = 700.dp,
+        anim = 1f)
 }
 
 @Preview(showBackground = false)
 @Composable
-fun directionBoxPreview2(){
-    directionBoxBig(
+fun DirectionBoxPreview2(){
+    DirectionBoxBig(
         alignment = Alignment.TopCenter,
         text = "SETTINGS",
         status = 0.dp,
         navigation = 0.dp,
-        width = 140.dp,
-        gestureBubbleAnimation = 1f,
+        width = 400.dp,
+        height = 700.dp,
+        anim  = 1f,
         imageId = R.drawable.cogwheel)
 }
 
 @Composable
-fun directionBoxBig(alignment: Alignment = Alignment.CenterStart,
-                    gestureBubbleAnimation : Float = 0.3f,
-                    text : String = "", status : Dp, navigation : Dp,
-                    width : Dp, imageId : Int = R.drawable.off_button){
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .padding(0.dp, status, 0.dp, navigation)){
-        Surface(modifier = Modifier
-            .align(alignment)
-            .padding(20.dp)
-            .wrapContentSize()
-            .defaultMinSize(100.dp, 40.dp)
-            .alpha(gestureBubbleAnimation)
-            .graphicsLayer(
-                scaleX = gestureBubbleAnimation,
-                scaleY = gestureBubbleAnimation
-            ),
-            tonalElevation = 4.dp,
-            shadowElevation = 4.dp,
-            color = color4_light,
-            shape = RoundedCornerShape(20.dp)
-        )
-        {
+fun DirectionBoxBig(alignment: Alignment = Alignment.CenterStart,
+                    anim : Float = 0.3f, text : String = "",
+                    status : Dp, navigation : Dp,
+                    width  : Dp, height : Dp,
+                    imageId : Int = R.drawable.off_button,
+                    color       : Color = Color(0xFFE2E2FF),
+                    waveColor   : Color = Color(0x99BBBBEF)){
 
-            Column {
+    var translationX = 0.dp
+    var translationY = 0.dp
+    var intAlignment = Alignment.CenterStart
+    when(alignment){
+        Alignment.CenterStart -> {
+            translationX = - width / 2
+            intAlignment = Alignment.CenterEnd
+        }
+        Alignment.CenterEnd -> {
+            translationX = width / 2
+            intAlignment = Alignment.CenterStart
+        }
+        Alignment.TopCenter -> {
+            translationY = - height / 2
+            intAlignment = Alignment.BottomCenter
+        }
+        Alignment.BottomCenter -> {
+            translationY = height / 2
+            intAlignment = Alignment.TopCenter
+        }
+    }
+
+    Box(modifier = Modifier
+        .fillMaxSize()){
+
+        //***********
+        //
+        // WAVE ANIM
+        //
+        //***********
+        Box(modifier = Modifier
+            .graphicsLayer {
+                scaleX = anim * 10f
+                scaleY = anim * 10f
+                alpha  = 1 - anim
+                this.translationY = translationY.toPx()
+                this.translationX = translationX.toPx()
+            }
+            .align(alignment)
+            .fillMaxSize()
+            .aspectRatio(1f)
+            .clip(CircleShape)
+            .background(
+                brush = Brush.radialGradient(
+                    colors = listOf(Color(0x00000000), color, Color(0x00000000)
+                ))
+            ))
+
+        //***********
+        //
+        // CIRCLE
+        //
+        //***********
+        Box(modifier = Modifier
+            .graphicsLayer {
+                alpha  = anim
+                scaleX = anim
+                scaleY = anim
+                this.translationX = translationX.toPx()
+                this.translationY = translationY.toPx()
+            }
+            .background(
+                brush = Brush.radialGradient(
+                    listOf(color, Color(0x00000000))
+                )
+            )
+            .align(Alignment.Center)
+            .width(width)
+            .aspectRatio(1f)){
+
+            Column(modifier = Modifier
+                .align(intAlignment)
+                .padding(width / 12, status.coerceAtLeast(5.dp), width / 12, navigation.coerceAtLeast(5.dp))) {
                 Image(painter = painterResource(id = imageId),
                     contentDescription = "",
                     modifier = Modifier
-                        .width(width / 2)
+                        .width(width / 6)
                         .aspectRatio(1f)
-                        .padding(10.dp)
                         .align(Alignment.CenterHorizontally))
 
                 Text(text = text,
                     modifier = Modifier
-                        .padding(10.dp, 4.dp, 10.dp, 0.dp)
                         .align(Alignment.CenterHorizontally),
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold)
 
                 Text(text = "Description screen only some words",
                     modifier = Modifier
-                        .width(width)
-                        .padding(10.dp, 0.dp, 10.dp, 10.dp)
+                        .width(width / 3)
                         .align(Alignment.CenterHorizontally),
                     fontSize = 13.sp,
                     textAlign = TextAlign.Center)
             }
+
         }
     }
 }
 
 @Composable
-fun directionBox(alignment: Alignment = Alignment.CenterStart,
+fun DirectionBox(alignment: Alignment = Alignment.CenterStart,
                  gestureBubbleAnimation : Float = 0.3f,
                  text : String = "", status : Dp, navigation : Dp){
     Box(modifier = Modifier
@@ -438,8 +497,8 @@ fun directionBox(alignment: Alignment = Alignment.CenterStart,
 fun MainLayout(
     charts: MutableLiveData<ChartObject>,
     max : Int,
-    gestX : Float,
-    gestY : Float,
+    gestX : MutableFloatState,
+    gestY : MutableFloatState,
 ) {
     // Middle info
     Box(
@@ -576,18 +635,18 @@ fun MainLayout(
 @Composable
 fun Info(
     max : Int,
-    gestX : Float,
-    gestY : Float,
+    gestX : MutableFloatState,
+    gestY : MutableFloatState,
     info: InfoObject
 ){
 
     // move the entire screen
     val translationX by remember {
-        mutableFloatStateOf(gestX)
+        gestX
     }
 
     val translationY by remember {
-        mutableFloatStateOf(gestY)
+        gestY
     }
 
     Column(
