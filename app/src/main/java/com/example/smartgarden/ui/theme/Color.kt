@@ -11,10 +11,15 @@ val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 
 val White = Color(0xFFFFFFFF)
-val Black = Color(0xFF000000)
+val Black = Color(0xFF252525)
 
 val WhiteOpac = Color(0xB2FFFFFF)
+val WhiteOpacOpac = Color(0x5EFFFFFF)
 val BlackOpac = Color(0xA8000000)
+
+val Gray = Color(0xFF727272)
+val LightGray = Color(0xFFAFAFAF)
+val LightLightGray = Color(0xFFE4E4E4)
 
 val BlackText = Color(0xFF2E2E2E)
 val WhiteText = Color(0xFFE0E0E0)
@@ -35,7 +40,7 @@ val Orange80 = Color(0xCBF5AC41)
 
 val Opac = Color(0x3C8B8B8B)
 
-val Green1 = Color(0xFF73DA77)
+val Green1 = Color(0xFF8BC34A)
 val Blue1 = Color(0xFF6AD4E2)
 val Orange1 = Color(0xFFE7B770)
 
@@ -46,3 +51,7 @@ val Gray90 = Color(0xFFFCFCFC)
 val Gray80 = Color(0xFFEBEBEB)
 val Black80 = Color(0xFF404040)
 
+val DarkBlue = Color(0xFF04192B)
+val LightBlue = Color(0xFFD0F2EF)
+
+val Red = Color(0xFFFF5722)

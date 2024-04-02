@@ -27,22 +27,28 @@ class RaspberryConnectionManager @Inject constructor(
     @ApplicationContext context : Context) : ImageAnalysis.Analyzer {
 
     private lateinit var scanner : BarcodeScanner
-    private lateinit var callback : (RaspberryStatus, String?) -> Unit
+    private lateinit var updateLayoutCallback : (RaspberryStatus) -> Unit
+    private lateinit var startProvisioningCallback : (String) -> Unit
     private var qrScanned = false
 
     enum class RaspberryStatus{
-        SCANNED,
-        START_CONFIGURED,
-        END_CONFIGURED,
+        INIT,
+        GET_CODE,
+        CREATE_CONFIGURATOR_FILE,
+        SETTING_RASP_INFO,
+        SENDING_FILE,
+        CONNECTED,
+        SENT,
+        DISCONNECTED,
         FINISHED,
-        CLOSE,
+        ERROR
     }
 
-    val password = "daniele"
+    private val password = "daniele"
     lateinit var raspberryIp : String
     lateinit var raspberryUsername : String
     lateinit var sourceFilePath : String // File to be transferred from local to remote
-    val destinationDirectory = "/home/daniele/Projects/RaspGarden/configuration/files/" // Destination directory on remote
+    private val destinationDirectory = "/home/daniele/Projects/RaspGarden/configuration/files/" // Destination directory on remote
 
     /**
      * @param host raspberry ip
@@ -50,11 +56,6 @@ class RaspberryConnectionManager @Inject constructor(
     suspend fun sendConfigFile() {
         withContext(Dispatchers.IO){
             try {
-
-                // Layout
-                delay(2000)
-                callback(RaspberryStatus.START_CONFIGURED, "")
-
                 val jsch = JSch()
                 val session: Session = jsch.getSession(raspberryUsername, raspberryIp, 22)
                 session.setPassword(password)
@@ -63,6 +64,10 @@ class RaspberryConnectionManager @Inject constructor(
                 session.setConfig("StrictHostKeyChecking", "no")
                 session.connect()
 
+                // Updating layout
+                delay(2000)
+                updateLayoutCallback(RaspberryStatus.CONNECTED)
+
                 //SFTP setup
                 val channel: Channel = session.openChannel("sftp")
                 channel.connect()
@@ -70,31 +75,37 @@ class RaspberryConnectionManager @Inject constructor(
                 val channelsftp = channel as ChannelSftp
                 channelsftp.cd(destinationDirectory)
 
-                // Layout
-                delay(2000)
-                callback(RaspberryStatus.END_CONFIGURED, "")
-
                 val file = File(sourceFilePath)
                 channelsftp.put(FileInputStream(file), file.name)
 
+                // Updating layout
+                delay(2000)
+                updateLayoutCallback(RaspberryStatus.SENT)
+
                 channel.disconnect()
 
-                // Layout
+                // Updating layout
                 delay(2000)
-                callback(RaspberryStatus.FINISHED, "")
+                updateLayoutCallback(RaspberryStatus.DISCONNECTED)
+
             } catch (e: Exception) {
                 e.printStackTrace()
+                throw Exception("Throw exception sending the file in scp")
             }
         }
     }
 
-    fun initializeScanner(callback : (RaspberryStatus, String?) -> Unit) {
+    fun initializeScanner(
+        callbackLayout : (RaspberryStatus) -> Unit,
+        startCallback : (String) -> Unit
+    ) {
         qrScanned = false
         val options = BarcodeScannerOptions.Builder()
             .setBarcodeFormats(Barcode.FORMAT_QR_CODE)
             .build()
 
-        this.callback = callback
+        this.updateLayoutCallback       = callbackLayout
+        this.startProvisioningCallback  = startCallback
         scanner = BarcodeScanning.getClient(options)
     }
 
@@ -113,8 +124,7 @@ class RaspberryConnectionManager @Inject constructor(
                             Log.d("Qr code result", barcodes[0].rawValue.toString())
                             if (barcodes[0].rawValue.toString().startsWith("rasp_code:")) {
                                 qrScanned = true
-                                callback(
-                                    RaspberryStatus.SCANNED,
+                                startProvisioningCallback(
                                     barcodes[0].rawValue.toString().substringAfter("rasp_code:")
                                 )
                             }

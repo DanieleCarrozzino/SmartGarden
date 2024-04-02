@@ -1,29 +1,16 @@
-package com.example.smartgarden.screens
+package com.example.smartgarden.screens.raspberry
 
 import android.util.Log
 import android.view.ViewGroup
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.view.PreviewView
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.ExperimentalAnimationApi
-import androidx.compose.animation.core.Animatable
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.repeatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.with
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,7 +20,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -42,23 +28,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalLifecycleOwner
@@ -70,17 +46,14 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.lifecycle.viewModelScope
 import androidx.navigation.NavController
 import com.example.smartgarden.R
 import com.example.smartgarden.manager.RaspberryConnectionManager
 import com.example.smartgarden.navigation.Screen
+import com.example.smartgarden.screens.CustomSeekBar
+import com.example.smartgarden.ui.theme.Green1
 import com.example.smartgarden.utility.Utility
 import com.example.smartgarden.viewmodels.MainViewModel
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 
 @Composable
 fun ConfigRaspberryScreen(navController: NavController){
@@ -90,9 +63,10 @@ fun ConfigRaspberryScreen(navController: NavController){
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
 
-    // Status bar height
+    // Status and navigation bar height
     val density = LocalDensity.current.density
     val statusHeight = Utility.getStatusBarSize(context.resources) / density
+    val navigationHeight = Utility.getNavigationBarSize(context.resources) / density
 
     val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
 
@@ -103,7 +77,9 @@ fun ConfigRaspberryScreen(navController: NavController){
     )
 
     Surface(
-        modifier = Modifier.fillMaxSize().padding(0.dp, statusHeight.dp, 0.dp, 0.dp),
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(0.dp, statusHeight.dp, 0.dp, navigationHeight.dp),
         color = MaterialTheme.colorScheme.background
     ) {
         AndroidView(
@@ -197,63 +173,93 @@ fun BottomStatusAnimated(navController: NavController){
             containerColor = MaterialTheme.colorScheme.background
         ),
     ){
-        val liveStatusConfig = viewModel.statusConfiguration.observeAsState().value
 
-        AnimatedContent(
-            targetState = liveStatusConfig,
-            transitionSpec = {
-                fadeIn() + slideInVertically(animationSpec = tween(400),
-                    initialOffsetY = { fullHeight -> fullHeight }) togetherWith
-                        fadeOut(animationSpec = tween(200))
-            },
-            label = ""
-        ) { state ->
+        Column {
 
-            var icon            = R.drawable.hammer
-            var title           = "Creating Configuration File"
-            val description     = "Please keep this page open to complete the procedure."
+            val liveStatusConfig = viewModel.statusConfiguration.observeAsState().value
 
-            when (state) {
-                RaspberryConnectionManager.RaspberryStatus.SCANNED -> {
+            AnimatedContent(
+                targetState = liveStatusConfig,
+                transitionSpec = {
+                    fadeIn() + slideInVertically(animationSpec = tween(400),
+                        initialOffsetY = { fullHeight -> fullHeight }) togetherWith
+                            fadeOut(animationSpec = tween(200))
+                },
+                label = ""
+            ) { state ->
 
-                }
-                RaspberryConnectionManager.RaspberryStatus.START_CONFIGURED -> {
-                    icon  = R.drawable.folder
-                    title = "Transmitting Configuration File"
-                }
+                var title = "Default title"
+                val description = "Please keep this page open to complete the procedure."
 
-                RaspberryConnectionManager.RaspberryStatus.END_CONFIGURED -> {
-                    icon  = R.drawable.settings
-                    title = "Checking Configuration File"
-                }
-
-                RaspberryConnectionManager.RaspberryStatus.FINISHED -> {
-                    icon  = R.drawable.checked
-                    title = "Finished!"
-                }
-                RaspberryConnectionManager.RaspberryStatus.CLOSE -> {
-                    val route = navController.previousBackStackEntry?.destination?.route
-                    if(route == Screen.Home.route){
-                        if(!close)
-                            navController.popBackStack()
-                    }
-                    else {
-                        if(!close)
-                            navController.navigate(Screen.Home.route)
+                when (state) {
+                    RaspberryConnectionManager.RaspberryStatus.INIT -> {
+                        title = "Init process"
                     }
 
-                    close = true
-                    Box(){}
-                    return@AnimatedContent
-                }
+                    RaspberryConnectionManager.RaspberryStatus.GET_CODE -> {
+                        title = "Getting code"
+                    }
 
-                else -> {Log.d("RaspScreen", "Something bad is happened")}
+                    RaspberryConnectionManager.RaspberryStatus.CREATE_CONFIGURATOR_FILE -> {
+                        title = "Create your personal file"
+                    }
+
+                    RaspberryConnectionManager.RaspberryStatus.SETTING_RASP_INFO -> {
+                        title = "Setting the raspberry"
+                    }
+
+                    RaspberryConnectionManager.RaspberryStatus.SENDING_FILE -> {
+                        title = "Sending file"
+                    }
+
+                    RaspberryConnectionManager.RaspberryStatus.CONNECTED -> {
+                        title = "Connected!"
+                    }
+
+                    RaspberryConnectionManager.RaspberryStatus.SENT -> {
+                        title = "Sent!"
+                    }
+
+                    RaspberryConnectionManager.RaspberryStatus.DISCONNECTED -> {
+                        title = "Disconnected"
+                    }
+
+                    RaspberryConnectionManager.RaspberryStatus.ERROR -> {
+                        title = "Error"
+                    }
+
+                    RaspberryConnectionManager.RaspberryStatus.FINISHED -> {
+                        val route = navController.previousBackStackEntry?.destination?.route
+                        if (route == Screen.Home.route) {
+                            if (!close)
+                                navController.popBackStack()
+                        } else {
+                            if (!close)
+                                navController.navigate(Screen.Home.route)
+                        }
+
+                        close = true
+                        return@AnimatedContent
+                    }
+
+                    else -> {
+                        Log.d("RaspScreen", "Something bad is happened")
+                    }
+                }
+                IconTitleAndDescription(
+                    iconId = -1,
+                    title = title,
+                    description = description,
+                    Modifier.padding(20.dp)
+                )
             }
-            IconTitleAndDescription(
-                iconId = icon,
-                title = title,
-                description = description,
-                Modifier.padding(20.dp)
+
+            CustomSeekBar(liveStatusConfig?.ordinal ?: 0,
+                "",
+                Modifier
+                    .fillMaxWidth()
+                    .padding(25.dp), Green1,
+                RaspberryConnectionManager.RaspberryStatus.entries.size
             )
         }
     }
@@ -262,15 +268,17 @@ fun BottomStatusAnimated(navController: NavController){
 @Composable
 fun IconTitleAndDescription(iconId : Int, title : String, description : String, modifier: Modifier){
     Row(modifier = modifier){
-        Image(
-            modifier = Modifier
-                .width(60.dp)
-                .aspectRatio(1f)
-                .padding(0.dp, 0.dp, 10.dp, 0.dp)
-                .align(Alignment.CenterVertically),
-            painter = painterResource(id = iconId),
-            contentDescription = "qr icon",
-            alignment = Alignment.Center)
+        if(iconId > 0){
+            Image(
+                modifier = Modifier
+                    .width(60.dp)
+                    .aspectRatio(1f)
+                    .padding(0.dp, 0.dp, 10.dp, 0.dp)
+                    .align(Alignment.CenterVertically),
+                painter = painterResource(id = iconId),
+                contentDescription = "qr icon",
+                alignment = Alignment.Center)
+        }
         Column {
             Text(
                 text = title,

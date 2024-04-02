@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.sp
 import com.example.smartgarden.ui.theme.Green1
 
 @Composable
-fun CustomSeekBar(value : Int, name : String, modifier: Modifier, color : Color){
+fun CustomSeekBar(value : Int, name : String, modifier: Modifier, color : Color, max : Int = 100){
 
     var animateScale by remember { mutableStateOf(false) }
 
@@ -50,20 +50,22 @@ fun CustomSeekBar(value : Int, name : String, modifier: Modifier, color : Color)
     }
 
     val animatedValue by animateFloatAsState(
-        targetValue = if (animateScale) value.toFloat() / 100f else 0f,
+        targetValue = if (animateScale) value.toFloat() / max else 0f,
         animationSpec = tween(durationMillis = 1000),
         label = ""
     )
 
     Column(modifier = modifier) {
-        Text(
-            modifier = Modifier.padding(4.dp),
-            text = name,
-            textAlign = TextAlign.Start,
-            color = MaterialTheme.colorScheme.onPrimaryContainer,
-            fontWeight = FontWeight.Bold,
-            fontSize = 15.sp,
-            maxLines = 1)
+        if(name != ""){
+            Text(
+                modifier = Modifier.padding(4.dp),
+                text = name,
+                textAlign = TextAlign.Start,
+                color = MaterialTheme.colorScheme.onPrimaryContainer,
+                fontWeight = FontWeight.Bold,
+                fontSize = 15.sp,
+                maxLines = 1)
+        }
 
         Card(
             modifier = Modifier

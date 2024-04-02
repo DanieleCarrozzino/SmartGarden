@@ -47,6 +47,10 @@ class DataInternalRepository @Inject constructor(
         shared.putBoolean(CONNECTED_RASP, true)
     }
 
+    fun setDisconnected() {
+        shared.putBoolean(CONNECTED_RASP, false)
+    }
+
     fun getConnected() : Boolean{
         return shared.getBoolean(CONNECTED_RASP)
     }

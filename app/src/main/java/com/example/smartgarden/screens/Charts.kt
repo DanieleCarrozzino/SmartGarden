@@ -58,15 +58,18 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.smartgarden.R
 import com.example.smartgarden.ui.theme.Blue20
+import com.example.smartgarden.ui.theme.Green
 import com.example.smartgarden.ui.theme.Green80
 import com.example.smartgarden.ui.theme.Opac
 import com.example.smartgarden.ui.theme.Purple40
 import com.example.smartgarden.ui.theme.Purple80
 import com.example.smartgarden.utility.Utility.Companion.getPath
+import com.example.smartgarden.utility.Utility.Companion.getPath2
 import com.example.smartgarden.utility.Utility.Companion.getPathNodes
 import com.example.smartgarden.utility.Utility.Companion.lerp
 import com.example.smartgarden.viewmodels.MainViewModel
 import java.text.DecimalFormat
+import kotlin.math.pow
 
 @Composable
 fun SingleChartBox(title : String, perc : Float){
@@ -131,6 +134,44 @@ fun SingleChartBox(title : String, perc : Float){
                 lineHeight = 22.sp,
                 fontSize = if(perc > 1000f) 18.sp else if(perc > 100f) 21.sp else 23.sp
             )
+        }
+    }
+}
+
+@Composable
+fun ChartBoxSemiCircle(){
+
+    val listValues = mutableListOf<Float>()
+
+    val intervalStart = 1.0
+    val intervalEnd = 3
+    val intervalStep = 0.1f
+
+    var x = intervalStart
+    while (x <= intervalEnd) {
+        val y = kotlin.math.sqrt(4 - (x - 2).pow(2))
+        listValues.add(y.toFloat())
+        println("x = $x, y = $y")
+        x += intervalStep
+    }
+    listValues.add(1.73205f)
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+    ) {
+
+        Canvas(modifier = Modifier
+            .padding(0.dp)
+            .fillMaxSize()){
+
+            // Get the random path
+            val path = getPath2(listValues, size)
+
+            //This draw the graph point by point
+            drawPath(
+                path = path,
+                color = Green80)
         }
     }
 }

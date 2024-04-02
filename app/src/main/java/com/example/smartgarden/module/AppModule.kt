@@ -1,22 +1,28 @@
 package com.example.smartgarden.module
 
 import android.content.Context
+import androidx.media3.common.Player
+import androidx.media3.exoplayer.ExoPlayer
 import com.example.smartgarden.firebase.authentication.FirebaseAuthenticationImpl
 import com.example.smartgarden.firebase.authentication.FirebaseAuthenticator
 import com.example.smartgarden.firebase.storage.FirebaseFirestoreImpl
 import com.example.smartgarden.firebase.storage.FirebaseFirestoreInterface
 import com.example.smartgarden.firebase.storage.FirebaseRealTimeDatabase
 import com.example.smartgarden.firebase.storage.FirebaseRealTimeDatabaseImpl
+import com.example.smartgarden.firebase.storage.FirebaseStorageImpl
+import com.example.smartgarden.firebase.storage.FirebaseStorageInterface
 import com.example.smartgarden.manager.RaspberryConnectionManager
 import com.example.smartgarden.manager.SharedPreferenceManager
 import com.example.smartgarden.repository.DataInternalRepository
+import com.example.smartgarden.viewmodels.CameraViewModel
 import com.example.smartgarden.viewmodels.LoginViewModel
 import com.example.smartgarden.viewmodels.MainViewModel
-import com.example.smartgarden.viewmodels.ThresholdViewModel
+import com.example.smartgarden.viewmodels.SettingsViewModel
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dagger.hilt.android.scopes.ViewModelScoped
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -46,6 +52,12 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideFirebaseStorage() : FirebaseStorageInterface {
+        return FirebaseStorageImpl()
+    }
+
+    @Provides
+    @Singleton
     fun provideLoginViewModel(
         auth : FirebaseAuthenticator,
         firestore : FirebaseFirestoreImpl,
@@ -57,11 +69,12 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideThresholdViewModel(
+    fun provideSettingsViewModel(
         database : FirebaseRealTimeDatabase,
-        dataInternalRepository: DataInternalRepository
-    ) : ThresholdViewModel {
-        return ThresholdViewModel(database, dataInternalRepository)
+        dataInternalRepository: DataInternalRepository,
+        auth: FirebaseAuthenticator
+    ) : SettingsViewModel {
+        return SettingsViewModel(database, dataInternalRepository, auth)
     }
 
     @Provides

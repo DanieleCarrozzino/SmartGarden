@@ -189,7 +189,7 @@ fun ListOfGardens(list : List<DocumentSnapshot>){
                     )
                     viewModel.saveGardenAndGoOn(garden)
                 }
-                .background(MaterialTheme.colorScheme.onPrimary)
+                .background(MaterialTheme.colorScheme.onSecondary)
                 .defaultMinSize(minWidth = 0.dp, minHeight = 0.dp)
 
             SingleGardenItem(mod, name, creation)
@@ -332,11 +332,11 @@ fun GenericButton(
         ), // Set elevation value for the card
         shape = RoundedCornerShape(30.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.onPrimary
+            containerColor = MaterialTheme.colorScheme.onSecondary
         ),
     ) {
         Row(modifier = Modifier
-            .background(MaterialTheme.colorScheme.onPrimary)
+            .background(MaterialTheme.colorScheme.onSecondary)
             .clickable {
                 functionClicked()
             }
@@ -385,11 +385,11 @@ fun BigImageButton(
         ), // Set elevation value for the card
         shape = RoundedCornerShape(30.dp),
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.onPrimary
+            containerColor = MaterialTheme.colorScheme.onSecondary
         ),
     ) {
         Row(modifier = Modifier
-            .background(MaterialTheme.colorScheme.onPrimary)
+            .background(MaterialTheme.colorScheme.onSecondary)
             .clickable {
                 functionClicked()
             }

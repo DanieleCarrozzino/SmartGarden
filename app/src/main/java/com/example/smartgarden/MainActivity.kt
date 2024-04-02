@@ -36,7 +36,8 @@ class MainActivity : ComponentActivity() {
     @Inject lateinit var auth : FirebaseAuthenticator
     @Inject lateinit var dataInternalRepository: DataInternalRepository
 
-    private val launcher = registerForActivityResult(ActivityResultContracts.StartIntentSenderForResult()) { result ->
+    private val launcher = registerForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()) { result ->
         auth.responseSignInWithGoogle(result)
     }
 

@@ -77,6 +77,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore")
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-messaging")
+    implementation("com.google.firebase:firebase-storage")
 
     //Dagger - Hilt + navigation hilt
     implementation("com.google.dagger:hilt-android:2.48")
@@ -103,6 +104,13 @@ dependencies {
 
     // Live data
     implementation("androidx.compose.runtime:runtime-livedata:1.5.4")
+
+    // Url image
+    implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // Video url image
+    implementation("androidx.media3:media3-exoplayer:1.2.1")
+    implementation("androidx.media3:media3-ui:1.2.1")
 }
 
 // Allow references to generated code

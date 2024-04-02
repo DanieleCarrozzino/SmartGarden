@@ -10,12 +10,11 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -23,6 +22,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
@@ -30,8 +30,11 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableFloatState
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -40,6 +43,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEvent
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -47,20 +51,27 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.MutableLiveData
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.smartgarden.R
 import com.example.smartgarden.objects.CHART_TYPE
+import com.example.smartgarden.objects.ChartObject
 import com.example.smartgarden.objects.InfoObject
 import com.example.smartgarden.ui.theme.Blue20
 import com.example.smartgarden.ui.theme.Blue80
 import com.example.smartgarden.ui.theme.Green80
+import com.example.smartgarden.ui.theme.LightBlue
 import com.example.smartgarden.ui.theme.Orange80
+import com.example.smartgarden.ui.theme.color4_light
 import com.example.smartgarden.utility.Utility
 import com.example.smartgarden.viewmodels.MainViewModel
+import kotlin.math.abs
 
 
 @Composable
@@ -76,23 +87,82 @@ fun HomeScreen(navController: NavController){
     val statusHeight = Utility.getStatusBarSize(LocalContext.current.resources) / density
     val navigationHeight = Utility.getNavigationBarSize(LocalContext.current.resources) / density
 
-    val name by remember {
-        viewModel.name
-    }
+    HomeCore(
+        navController = navController,
+        statusHeight, navigationHeight,
+        screenWidth, screenHeight,
+        viewModel.maxDistanceGesture,
+        viewModel.connected,
+        viewModel.transitionGestureX,
+        viewModel.transitionGestureY,
+        viewModel.positionType,
+        viewModel.name,
+        viewModel.chart,
+        viewModel.temperatureValue,
+        viewModel.hydrationValue,
+        viewModel.wellnessValue,
+        viewModel::init,
+        viewModel::managePointerEvent
+    )
+}
 
-    val date by remember {
-        viewModel.date
-    }
+@Preview
+@Composable
+fun PreviewHomeCore(){
+    HomeCore(navController = rememberNavController())
+}
+
+@Composable
+fun HomeCore(
+    navController: NavController,
+    statusHeight: Float     = 0f,
+    navigationHeight: Float = 0f,
+    screenWidth : Dp        = 400.dp,
+    screenHeight : Dp       = 700.dp,
+    maxDistanceGesture: Int = 400,
+    connections: MutableState<Boolean> = mutableStateOf(true),
+    gestureX: MutableFloatState = mutableFloatStateOf(0f),
+    gestureY: MutableFloatState = mutableFloatStateOf(0f),
+    positionType: MutableState<MainViewModel.POSITION_TYPE> = mutableStateOf(MainViewModel.POSITION_TYPE.DEFAULT),
+    name: MutableState<String> = mutableStateOf(""),
+    charts: MutableLiveData<ChartObject> = MutableLiveData<ChartObject>(),
+
+    temperature : MutableLiveData<Int>   = MutableLiveData<Int>(),
+    hydration   : MutableLiveData<Int>      = MutableLiveData<Int>(),
+    wellness    : MutableLiveData<Int>      = MutableLiveData<Int>(),
+
+    init: () -> Unit = {},
+    managePointer: (PointerEvent, NavController) -> Unit = {_, _ ->}
+){
 
     val connected by remember {
-        viewModel.connected
+        connections
     }
+
+    // move the entire screen
+    val translationX by remember {
+        gestureX
+    }
+
+    val translationY by remember {
+        gestureY
+    }
+
+    val gestureType by remember {
+        positionType
+    }
+
+    val gestureBubbleAnimation : Float by animateFloatAsState(
+        if(gestureType == MainViewModel.POSITION_TYPE.DEFAULT) 0.8f else 1f,
+        label = "",
+        animationSpec = tween(300)
+    )
 
     // State to track whether data has been fetched
     var dataFetched by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         if (!dataFetched) {
-            viewModel.init()
+            init()
             dataFetched = true
         }
     }
@@ -100,27 +170,33 @@ fun HomeScreen(navController: NavController){
     Surface(
         modifier = Modifier
             .fillMaxSize()
-            .padding(0.dp, 0.dp, 0.dp, navigationHeight.dp)
+            .padding(0.dp, 0.dp, 0.dp, 0.dp)
             .pointerInput(Unit) {
-                detectTapGestures(
-                    onLongPress = {
-                        navController.navigate("threshold")
-                    },
-                    onDoubleTap = {
-                        // Handle double tap here
-                        println("Double click detected!")
-                    },
-                    onPress = {
-                        if (viewModel.connected.value)
-                            viewModel.changeScreenClick = true
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent()
+
+                        if (!connected) return@awaitPointerEventScope
+
+                        managePointer(
+                            event,
+                            navController
+                        )
                     }
-                )
+                }
             },
         color = MaterialTheme.colorScheme.background
     ) {
 
         Column(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .alpha(1 - abs(translationX).coerceAtLeast(abs(translationY)))
+                .padding(0.dp, 0.dp, 0.dp, navigationHeight.dp)
+                .graphicsLayer(
+                    translationX = maxDistanceGesture * translationX,
+                    translationY = maxDistanceGesture * translationY
+                )
         ) {
 
             // Top image rounded, date and name
@@ -134,10 +210,10 @@ fun HomeScreen(navController: NavController){
             ) {
 
                 // type to use to animate
-                val chart = viewModel.chart.observeAsState().value
+                val chart = charts.observeAsState().value
 
                 RoundedImage(
-                    viewModel,
+                    name,
                     Modifier
                         .width(screenWidth)
                         .aspectRatio(1f)
@@ -169,20 +245,20 @@ fun HomeScreen(navController: NavController){
                         animationSpec = tween(1000)
                     )
 
-                    CustomSeekBar(viewModel.temperatureValue.observeAsState().value ?: 0,
+                    CustomSeekBar(temperature.observeAsState().value ?: 0,
                         "Temperature",
                         Modifier
                             .graphicsLayer(alpha = alphaTemperature)
                             .fillMaxWidth()
                             .padding((screenWidth / 6), 5.dp, 15.dp, 5.dp), Orange80)
 
-                    CustomSeekBar(viewModel.hydrationValue.observeAsState().value ?: 0,
+                    CustomSeekBar(hydration.observeAsState().value ?: 0,
                         "Hydration", Modifier
                             .graphicsLayer(alpha = alphaHumidity)
                             .fillMaxWidth()
                             .padding((screenWidth / 9), 10.dp, 16.dp, 5.dp), Blue80)
 
-                    CustomSeekBar(viewModel.wellnessValue.observeAsState().value ?: 0,
+                    CustomSeekBar(wellness.observeAsState().value ?: 0,
                         "Wellness", Modifier
                             .graphicsLayer(alpha = alphaSoilMoisture)
                             .fillMaxWidth()
@@ -194,22 +270,178 @@ fun HomeScreen(navController: NavController){
 
             // Main layout
             if(connected){
-                MainLayout(viewModel = viewModel)
+                MainLayout(
+                    charts,
+                    maxDistanceGesture,
+                    gestureX.value, gestureY.value
+                )
             }
             // Place holder
             else{
-                PlaceHolder(viewModel = viewModel, navController = navController)
+                PlaceHolder(navController = navController)
             }
         }
 
-    }
 
+        when(gestureType) {
+            MainViewModel.POSITION_TYPE.LEFT -> {
+                directionBoxBig(
+                    Alignment.CenterStart,
+                    gestureBubbleAnimation,
+                    "BOH?",
+                    statusHeight.dp, navigationHeight.dp,
+                    screenWidth / 3,
+                    imageId = R.drawable.webcam)
+            }
+            MainViewModel.POSITION_TYPE.RIGHT -> {
+                directionBoxBig(
+                    Alignment.CenterEnd,
+                    gestureBubbleAnimation,
+                    "SWITCH",
+                    statusHeight.dp, navigationHeight.dp,
+                    screenWidth / 3,
+                    imageId = R.drawable.off_button)
+            }
+            MainViewModel.POSITION_TYPE.UP -> {
+                directionBoxBig(
+                    Alignment.TopCenter,
+                    gestureBubbleAnimation,
+                    "SETTINGS",
+                    statusHeight.dp, navigationHeight.dp,
+                    screenWidth / 3,
+                    imageId = R.drawable.cogwheel)
+            }
+            MainViewModel.POSITION_TYPE.DOWN -> {
+                directionBoxBig(
+                    Alignment.BottomCenter,
+                    gestureBubbleAnimation,
+                    "CAMERA",
+                    statusHeight.dp, navigationHeight.dp,
+                    screenWidth / 3,
+                    imageId = R.drawable.webcam)
+            }
+            MainViewModel.POSITION_TYPE.DEFAULT -> {}
+        }
+    }
+}
+
+@Preview(showBackground = false)
+@Composable
+fun directionBoxPreview(){
+    directionBoxBig(
+        text = "GARDEN",
+        status = 0.dp,
+        navigation = 0.dp,
+        width = 140.dp,
+        gestureBubbleAnimation = 1f)
+}
+
+@Preview(showBackground = false)
+@Composable
+fun directionBoxPreview2(){
+    directionBoxBig(
+        alignment = Alignment.TopCenter,
+        text = "SETTINGS",
+        status = 0.dp,
+        navigation = 0.dp,
+        width = 140.dp,
+        gestureBubbleAnimation = 1f,
+        imageId = R.drawable.cogwheel)
+}
+
+@Composable
+fun directionBoxBig(alignment: Alignment = Alignment.CenterStart,
+                    gestureBubbleAnimation : Float = 0.3f,
+                    text : String = "", status : Dp, navigation : Dp,
+                    width : Dp, imageId : Int = R.drawable.off_button){
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .padding(0.dp, status, 0.dp, navigation)){
+        Surface(modifier = Modifier
+            .align(alignment)
+            .padding(20.dp)
+            .wrapContentSize()
+            .defaultMinSize(100.dp, 40.dp)
+            .alpha(gestureBubbleAnimation)
+            .graphicsLayer(
+                scaleX = gestureBubbleAnimation,
+                scaleY = gestureBubbleAnimation
+            ),
+            tonalElevation = 4.dp,
+            shadowElevation = 4.dp,
+            color = color4_light,
+            shape = RoundedCornerShape(20.dp)
+        )
+        {
+
+            Column {
+                Image(painter = painterResource(id = imageId),
+                    contentDescription = "",
+                    modifier = Modifier
+                        .width(width / 2)
+                        .aspectRatio(1f)
+                        .padding(10.dp)
+                        .align(Alignment.CenterHorizontally))
+
+                Text(text = text,
+                    modifier = Modifier
+                        .padding(10.dp, 4.dp, 10.dp, 0.dp)
+                        .align(Alignment.CenterHorizontally),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Bold)
+
+                Text(text = "Description screen only some words",
+                    modifier = Modifier
+                        .width(width)
+                        .padding(10.dp, 0.dp, 10.dp, 10.dp)
+                        .align(Alignment.CenterHorizontally),
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center)
+            }
+        }
+    }
+}
+
+@Composable
+fun directionBox(alignment: Alignment = Alignment.CenterStart,
+                 gestureBubbleAnimation : Float = 0.3f,
+                 text : String = "", status : Dp, navigation : Dp){
+    Box(modifier = Modifier
+        .fillMaxSize()
+        .padding(0.dp, status, 0.dp, navigation)){
+        Box(modifier = Modifier
+            .align(alignment)
+            .padding(20.dp)
+            .wrapContentSize()
+            .defaultMinSize(100.dp, 40.dp)
+            .alpha(gestureBubbleAnimation)
+            .graphicsLayer(
+                scaleX = gestureBubbleAnimation,
+                scaleY = gestureBubbleAnimation
+            )
+            .clip(RoundedCornerShape(32.dp))
+            .background(LightBlue)
+        )
+        {
+            Text(text = text,
+                modifier = Modifier
+                    .padding(20.dp, 10.dp, 20.dp, 10.dp)
+                    .align(Alignment.Center),
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold)
+        }
+    }
 }
 
 
 @Composable
-fun MainLayout(viewModel : MainViewModel){
-    // Moving Chart
+fun MainLayout(
+    charts: MutableLiveData<ChartObject>,
+    max : Int,
+    gestX : Float,
+    gestY : Float,
+) {
+    // Middle info
     Box(
         modifier = Modifier
             .fillMaxHeight(0.7f)
@@ -217,7 +449,7 @@ fun MainLayout(viewModel : MainViewModel){
             .background(MaterialTheme.colorScheme.background)
     ){
 
-        val type = viewModel.chart.observeAsState().value
+        val type = charts.observeAsState().value
 
         AnimatedContent(
             targetState = type,
@@ -230,52 +462,53 @@ fun MainLayout(viewModel : MainViewModel){
         )
         { chart ->
 
-            when(chart?.type){
+            val info = when(chart?.type){
                 CHART_TYPE.TEMPERATURE -> {
                     val temp = chart.values.last().toInt()
-                    val info = InfoObject(
+                     InfoObject(
                         R.drawable.termometro, R.drawable.sun_into_garden,
                         "$temp${chart.type.getSymbol()}", "8h",
                         "Temperatura attuale del giardino",
                         "Ore di luce continua presa dal giardino"
                     )
-                    Info(viewModel, info)
+
                 }
                 CHART_TYPE.HUMIDITY -> {
-                    val info = InfoObject(
+                    InfoObject(
                         R.drawable.water_can, R.drawable.water_tank,
                         "8", "14l",
                         "Innaffiature effettuate durante la giornata di oggi",
                         "Litri di acqua utilizzata durante questa giornata"
                     )
-                    Info(viewModel, info)
                 }
                 CHART_TYPE.SOIL_MOISTURE -> {
-                    val info = InfoObject(
+                    InfoObject(
                         R.drawable.soil_moisture, R.drawable.sensors,
                         "70%", "~5%",
                         "Percentuale di umidità nel terreno attuale",
                         "Differenza massima tra almeno 2 sensori nel terreno"
                     )
-                    Info(viewModel, info)
                 }
 
                 else -> {
-                    val info = InfoObject(
+                    InfoObject(
                         R.drawable.soil_moisture, R.drawable.sensors,
                         "34", "8h",
                         "Temperatura attuale del giardino",
                         "Ore di luce continua presa dal giardino"
                     )
-                    Info(viewModel, info)
                 }
             }
+            Info(
+                max,
+                gestX, gestY,
+                info)
 
         }
 
     }
 
-    // Bottom items
+    // Bottom Chart
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -294,7 +527,7 @@ fun MainLayout(viewModel : MainViewModel){
             color = MaterialTheme.colorScheme.background
         ) {
 
-            val listState = viewModel.chart.observeAsState().value
+            val listState = charts.observeAsState().value
             ChartBoxWithArrayAnimated(
                 listState?.values ?: listOf<Float>(0f, 0f, 0f),
                 listState?.type?.getColors()?.second ?: Blue80,
@@ -341,17 +574,33 @@ fun MainLayout(viewModel : MainViewModel){
 }
 
 @Composable
-fun Info(viewModel: MainViewModel, info: InfoObject){
+fun Info(
+    max : Int,
+    gestX : Float,
+    gestY : Float,
+    info: InfoObject
+){
+
+    // move the entire screen
+    val translationX by remember {
+        mutableFloatStateOf(gestX)
+    }
+
+    val translationY by remember {
+        mutableFloatStateOf(gestY)
+    }
+
     Column(
-        modifier = Modifier
+        modifier = Modifier.graphicsLayer(
+            translationX = max * translationX.div(2f),
+            translationY = max * translationY.div(2f)
+        )
     ) {
         FirstInfo(
-            viewModel = viewModel,
             Modifier.weight(1f),
             info.image1, info.value1, info.description1
         )
         SecondInfo(
-            viewModel = viewModel,
             Modifier.weight(1f),
             info.image2, info.value2, info.description2
         )
@@ -359,7 +608,7 @@ fun Info(viewModel: MainViewModel, info: InfoObject){
 }
 
 @Composable
-fun SecondInfo(viewModel : MainViewModel, modifier: Modifier, image : Int, value : String, description : String){
+fun SecondInfo(modifier: Modifier, image : Int, value : String, description : String){
     Row(modifier = modifier) {
 
         Text(
@@ -399,7 +648,7 @@ fun SecondInfo(viewModel : MainViewModel, modifier: Modifier, image : Int, value
 }
 
 @Composable
-fun FirstInfo(viewModel : MainViewModel, modifier: Modifier, image : Int, value : String, description : String){
+fun FirstInfo(modifier: Modifier, image : Int, value : String, description : String){
     Row(modifier = modifier) {
 
         Image(
@@ -437,7 +686,7 @@ fun FirstInfo(viewModel : MainViewModel, modifier: Modifier, image : Int, value 
 }
 
 @Composable
-fun PlaceHolder(viewModel : MainViewModel, navController: NavController){
+fun PlaceHolder(navController: NavController){
 
     Box(modifier = Modifier.fillMaxSize()) {
 
@@ -489,10 +738,10 @@ fun PlaceHolder(viewModel : MainViewModel, navController: NavController){
 }
 
 @Composable
-fun RoundedImage(viewModel : MainViewModel, modifier: Modifier, type : CHART_TYPE, screenWidth : Dp) {
+fun RoundedImage(nameChart : MutableState<String>, modifier: Modifier, type : CHART_TYPE, screenWidth : Dp) {
 
     val name by remember {
-        viewModel.name
+        nameChart
     }
 
     val backgroundColor by animateColorAsState(

@@ -5,10 +5,10 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.ViewModel
+import com.example.smartgarden.firebase.authentication.FirebaseAuthenticator
 import com.example.smartgarden.firebase.storage.FirebaseRealTimeDatabase
 import com.example.smartgarden.objects.DatabaseEntry
 import com.example.smartgarden.repository.DataInternalRepository
-import com.example.smartgarden.utility.Utility
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.GenericTypeIndicator
@@ -17,9 +17,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 
 @HiltViewModel
-class ThresholdViewModel @Inject constructor(
+class SettingsViewModel @Inject constructor(
     private val database : FirebaseRealTimeDatabase,
-    private val dataInternalRepository: DataInternalRepository
+    private val dataInternalRepository: DataInternalRepository,
+    private val auth : FirebaseAuthenticator
 ): ViewModel() {
 
     private val raspberryCode = dataInternalRepository.getRaspberryCode()
@@ -59,6 +60,9 @@ class ThresholdViewModel @Inject constructor(
             })
     }
 
+    // Main Settings
+    var activated = mutableStateOf(true)
+
     // hydration perc
     var percMin = mutableIntStateOf(34)
     var percMax = mutableIntStateOf(62)
@@ -67,8 +71,12 @@ class ThresholdViewModel @Inject constructor(
 
     var percMinTemperature  = mutableIntStateOf(12)
     var percMaxTemperature  = mutableIntStateOf(36)
-    var enabledTemperature  = mutableStateOf(false)
     var alphaTemperature    = mutableFloatStateOf(0.3f)
+
+    // Notifications
+    var enabledTemperature      = mutableStateOf(false)
+    var enabledNotifications    = mutableStateOf(false)
+    var enabledIrrigation       = mutableStateOf(false)
 
     fun changeLimits(){
         val rules = hashMapOf<String, Any>(
@@ -76,7 +84,9 @@ class ThresholdViewModel @Inject constructor(
             "max_watering"          to percMax.intValue,
             "min_temperature"       to percMinTemperature.intValue,
             "max_temperature"       to percMaxTemperature.intValue,
-            "notify_temperature"    to enabledTemperature.value
+            "notify"                to enabledNotifications.value,
+            "notify_temperature"    to enabledTemperature.value,
+            "notify_irrigation"     to enabledIrrigation.value
         )
 
         // Save user inside the realtime database
@@ -84,6 +94,35 @@ class ThresholdViewModel @Inject constructor(
             DatabaseEntry.Raspberry.key,
             listOf<String>(raspberryCode),
             rules)
+    }
+
+    fun setActivation(value : Boolean){
+        val rules = hashMapOf<String, Any>(
+            "activated"          to value
+        )
+
+        // Save user inside the realtime database
+        database.updateNode(
+            DatabaseEntry.Raspberry.key,
+            listOf<String>(raspberryCode),
+            rules)
+    }
+
+    fun setParam(value : Any, key : String){
+        val rules = hashMapOf<String, Any>(
+            key to value
+        )
+
+        // Save user inside the realtime database
+        database.updateNode(
+            DatabaseEntry.Raspberry.key,
+            listOf<String>(raspberryCode),
+            rules)
+    }
+
+    fun signout(){
+        dataInternalRepository.setDisconnected()
+        auth.signOut()
     }
 
 }

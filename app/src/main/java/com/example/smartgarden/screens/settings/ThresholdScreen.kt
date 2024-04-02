@@ -1,18 +1,12 @@
-package com.example.smartgarden.screens
+package com.example.smartgarden.screens.settings
 
 import android.util.Log
 import android.view.MotionEvent
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.awaitEachGesture
-import androidx.compose.foundation.gestures.awaitFirstDown
-import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,9 +16,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.foundation.layout.wrapContentWidth
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.Icon
@@ -35,11 +30,8 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,12 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.PointerEvent
-import androidx.compose.ui.input.pointer.PointerInputChange
-import androidx.compose.ui.input.pointer.consumePositionChange
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.pointer.pointerInteropFilter
 import androidx.compose.ui.platform.LocalConfiguration
@@ -62,22 +49,20 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.zIndex
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
-import com.example.smartgarden.ui.theme.Black
-import com.example.smartgarden.ui.theme.Blue80
-import com.example.smartgarden.ui.theme.Green
-import com.example.smartgarden.ui.theme.Pink40
+import com.example.smartgarden.ui.theme.Orange1
+import com.example.smartgarden.ui.theme.WhiteOpac
 import com.example.smartgarden.utility.Utility
-import com.example.smartgarden.viewmodels.MainViewModel
-import com.example.smartgarden.viewmodels.ThresholdViewModel
+import com.example.smartgarden.viewmodels.SettingsViewModel
 
 @Composable
 fun ThresholdScreen(navController: NavController){
-    val viewModel       = hiltViewModel<ThresholdViewModel>()
+    val viewModel       = hiltViewModel<SettingsViewModel>()
+
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
@@ -107,7 +92,7 @@ fun ThresholdScreen(navController: NavController){
 }
 
 @Composable
-fun MainThresholdLayout(width : Dp, viewModel: ThresholdViewModel){
+fun MainThresholdLayout(width : Dp, viewModel: SettingsViewModel){
 
     val alpha by remember {
         viewModel.alpha
@@ -117,7 +102,7 @@ fun MainThresholdLayout(width : Dp, viewModel: ThresholdViewModel){
         viewModel.enabled
     }
 
-    Column {
+    Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
 
         // Title and description
         Text(
@@ -153,7 +138,7 @@ fun MainThresholdLayout(width : Dp, viewModel: ThresholdViewModel){
 }
 
 @Composable
-fun TemperatureThreshold(width : Dp, viewModel: ThresholdViewModel){
+fun TemperatureThreshold(width : Dp, viewModel: SettingsViewModel){
 
     Column() {
 
@@ -166,17 +151,6 @@ fun TemperatureThreshold(width : Dp, viewModel: ThresholdViewModel){
             color = MaterialTheme.colorScheme.onBackground
         )
 
-        SwitchWithDescription(
-            text = "Activate notifications to stay informed about temperature updates, whether it reaches a maximum or minimum value",
-            checked = viewModel.enabledTemperature.value
-        )
-        {
-            viewModel.enabledTemperature.value = it
-            if(it){
-                viewModel.alphaTemperature.floatValue = 1f
-            } else viewModel.alphaTemperature.floatValue = 0.3f
-        }
-
         Text(text = "Gestione dei limiti di temperatura massimi e minimi",
             modifier = Modifier.padding(10.dp, 0.dp))
 
@@ -185,7 +159,8 @@ fun TemperatureThreshold(width : Dp, viewModel: ThresholdViewModel){
         DoubleSeekBar(
             width,
             viewModel.percMinTemperature, viewModel.percMaxTemperature,
-            viewModel.enabledTemperature, circleSize, marginCircles, "℃"){ value, type ->
+            viewModel.enabledTemperature, circleSize, marginCircles,
+            "℃", Orange1){ value, type ->
             when(type){
                 0 -> {
                     viewModel.percMinTemperature.intValue = value
@@ -199,7 +174,7 @@ fun TemperatureThreshold(width : Dp, viewModel: ThresholdViewModel){
 }
 
 @Composable
-fun HydrationThreshold(width : Dp, viewModel: ThresholdViewModel){
+fun HydrationThreshold(width : Dp, viewModel: SettingsViewModel){
 
     // Hydration double seek bar
     Column {
@@ -219,7 +194,8 @@ fun HydrationThreshold(width : Dp, viewModel: ThresholdViewModel){
         DoubleSeekBar(
             width,
             viewModel.percMin, viewModel.percMax,
-            viewModel.enabled, circleSize, marginCircles, "%"){ value, type ->
+            viewModel.enabled, circleSize, marginCircles,
+            "%", MaterialTheme.colorScheme.surface){ value, type ->
             when(type){
                 0 -> {
                     viewModel.percMin.intValue = value
@@ -239,7 +215,7 @@ fun DoubleSeekBar(width : Dp,
                   percMin : MutableState<Int>, percMax : MutableState<Int>,
                   enable : MutableState<Boolean>,
                   circleSize : Dp, marginCircles : Dp,
-                  symbol : String,
+                  symbol : String, color : Color,
                   offsetFunction : (Int, Int) -> Unit){
     val maxWidth = width - circleSize - (marginCircles * 2)
 
@@ -278,6 +254,9 @@ fun DoubleSeekBar(width : Dp,
                 Log.d("Threshold", off.toString())
 
                 if (!enable.value) return@detectTransformGestures
+
+                offsetLeft = Pair((maxWidth * perc1) / 100 + marginCircles, 0.dp)
+                offsetRight = Pair((maxWidth * perc2) / 100 + marginCircles, 0.dp)
 
                 var x = (off.x / density).dp
                 if (x < marginCircles) x = marginCircles
@@ -345,7 +324,7 @@ fun DoubleSeekBar(width : Dp,
                     shadowElevation = 4.dp,
                     tonalElevation = 4.dp,
                     shape = RoundedCornerShape(circleSize / 4),
-                    color = MaterialTheme.colorScheme.surface
+                    color = color
                 ){
 
                 }
@@ -355,7 +334,7 @@ fun DoubleSeekBar(width : Dp,
                     .height(circleSize / 2 - 4.dp)
                     .width(offsetRight.first - offsetLeft.first)
                     .offset(offsetLeft.first + marginCircles + (circleSize / 4), 0.dp)
-                    .background(MaterialTheme.colorScheme.onSecondaryContainer)
+                    .background(WhiteOpac)
                     .align(Alignment.CenterStart))
 
                 Surface(modifier = Modifier
@@ -381,7 +360,7 @@ fun DoubleSeekBar(width : Dp,
                     shadowElevation = 0.dp,
                     tonalElevation = 0.dp,
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = MaterialTheme.colorScheme.background
                 ){
 
                 }
@@ -404,7 +383,7 @@ fun DoubleSeekBar(width : Dp,
                     shadowElevation = 0.dp,
                     tonalElevation = 0.dp,
                     shape = CircleShape,
-                    color = MaterialTheme.colorScheme.onSecondaryContainer
+                    color = MaterialTheme.colorScheme.background
                 ){
 
                 }
@@ -415,7 +394,7 @@ fun DoubleSeekBar(width : Dp,
 }
 
 @Composable
-fun SwitchWithDescription(text : String = "", checked : Boolean, enableFunction : (Boolean) -> Unit){
+fun SwitchWithDescription(text : String = "", fontWeight: FontWeight = FontWeight.Normal, fontSize : TextUnit = 14.sp, checked : Boolean = false, enableFunction : (Boolean) -> Unit){
 
     val icon: (@Composable () -> Unit)? = if (checked) {
         {
@@ -438,7 +417,9 @@ fun SwitchWithDescription(text : String = "", checked : Boolean, enableFunction 
 
         Text(
             text = text,
-            modifier = Modifier.padding(4.dp, 0.dp, 0.dp, 0.dp)
+            modifier = Modifier.padding(4.dp, 0.dp, 0.dp, 0.dp),
+            fontWeight = fontWeight,
+            fontSize = fontSize,
         )
 
         Switch(

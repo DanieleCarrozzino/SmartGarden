@@ -1,6 +1,9 @@
 package com.example.smartgarden.viewmodels
 
 import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import android.util.Log
 import androidx.annotation.OptIn
 import androidx.camera.core.CameraSelector
@@ -14,16 +17,22 @@ import androidx.camera.view.PreviewView
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.vector.PathNode
+import androidx.compose.ui.input.pointer.PointerEvent
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.navigation.NavController
 import com.example.smartgarden.firebase.authentication.FirebaseAuthenticator
 import com.example.smartgarden.firebase.storage.FirebaseFirestoreImpl
 import com.example.smartgarden.firebase.storage.FirebaseRealTimeDatabase
 import com.example.smartgarden.manager.RaspberryConnectionManager
+import com.example.smartgarden.navigation.Screen
 import com.example.smartgarden.objects.CHART_TYPE
 import com.example.smartgarden.objects.ChartObject
 import com.example.smartgarden.objects.GardenKeys
@@ -52,6 +61,7 @@ import java.io.BufferedWriter
 import java.io.File
 import java.io.FileWriter
 import javax.inject.Inject
+import kotlin.math.abs
 import kotlin.random.Random
 
 @HiltViewModel
@@ -63,6 +73,9 @@ class MainViewModel @Inject constructor(
     private val dataInternalRepository: DataInternalRepository,
     private val raspberryConnection : RaspberryConnectionManager
 ) : ViewModel() {
+
+    // Sensor
+    val vibrator : Vibrator? = getSystemService(context, Vibrator::class.java)
 
     private lateinit var garden : HashMap<String, Any>
 
@@ -80,17 +93,36 @@ class MainViewModel @Inject constructor(
     var lastListPathNode = listOf<PathNode>()
     val typeChart = MutableLiveData<CHART_TYPE>()
     var changeScreenClick = false
+    var pressingScreen = false
 
     // 3 Seek bar values
     val temperatureValue    = MutableLiveData<Int>()
     val hydrationValue      = MutableLiveData<Int>()
     val wellnessValue       = MutableLiveData<Int>()
 
+    // Gesture values
+    var maxDistanceGesture = 500 // TODO change this value looking for the width screen size
+    private var offsetPress     = mutableStateOf(Offset(0f, 0f))
+    private var fingerMovement  = mutableStateOf(Offset(0f, 0f))
+    private var vibrateYet      = false
+
+    /* 0 - 1 define a perc value*/
+    var transitionGestureY = mutableFloatStateOf(0f)
+    var transitionGestureX = mutableFloatStateOf(0f)
+
+    enum class POSITION_TYPE{
+        LEFT,
+        RIGHT,
+        UP,
+        DOWN,
+        DEFAULT,
+    }
+
     fun init(){
 
         // To know if I connect myself already to
         // the raspberry pi
-        connected.value = dataInternalRepository.getConnected()
+        connected.value = /*dataInternalRepository.getConnected()*/true
 
         // Start real time database listener
         // to keep watch every changes
@@ -145,7 +177,10 @@ class MainViewModel @Inject constructor(
 
     private fun animateCharts(){
 
+        // Starting the animation only once
+        if(animationChartIsRunning) return
         animationChartIsRunning = true
+
         viewModelScope.launch(Dispatchers.IO) {
             while(true){
 
@@ -202,12 +237,13 @@ class MainViewModel @Inject constructor(
                     typeChart.value = type
 
                     // Define 3 main values
-                    temperatureValue.value  = list.last().toInt()
-                    hydrationValue.value    = Random.nextInt(1, 100)
-                    wellnessValue.value     = Random.nextInt(1, 100)
+                    // return 0 if the garden is disconnected
+                    temperatureValue.value  = if(!connected.value) 0 else list.last().toInt()
+                    hydrationValue.value    = if(!connected.value) 0 else Random.nextInt(1, 100)
+                    wellnessValue.value     = if(!connected.value) 0 else Random.nextInt(1, 100)
 
                     // TODO remove
-                    connected.value = true
+                    //connected.value = true
                 }
 
                 /*
@@ -215,12 +251,146 @@ class MainViewModel @Inject constructor(
                 * or for timeout
                 * */
                 var count = 0
-                while(count < 700 && !changeScreenClick){
+                while((count < 700 && !changeScreenClick) || pressingScreen || !connected.value){
                     count ++
                     delay(10)
                 }
-                changeScreenClick = false
+                changeScreenClick   = false
             }
+        }
+    }
+
+
+    var positionType = mutableStateOf(POSITION_TYPE.DEFAULT)
+    val thresholdGesture = 0.12f
+    fun managePointerEvent(event : PointerEvent, navController: NavController){
+        // handle pointer event
+        if (event.type == PointerEventType.Press) {
+            Log.d("HomeScreen", "Press")
+
+            // Save the offset
+            offsetPress.value = event.changes.first().position
+
+            // Pressing state, to block the animation
+            pressingScreen = true
+
+        } else if (event.type == PointerEventType.Move) {
+
+            // Calculate new position
+            fingerMovement.value = event.changes.first().position
+            moveTransitionsGesture()
+
+            Log.d("Home", "Move Y ${transitionGestureY.floatValue}")
+            Log.d("Home", "Move X ${transitionGestureX.floatValue}")
+
+            if(transitionGestureY.floatValue > thresholdGesture){
+                positionType.value = POSITION_TYPE.UP
+                if(!vibrateYet){
+                    vibrate(50)
+                    vibrateYet = true
+                }
+            }
+            else if(transitionGestureY.floatValue < -thresholdGesture){
+                positionType.value = POSITION_TYPE.DOWN
+                if(!vibrateYet){
+                    vibrate(50)
+                    vibrateYet = true
+                }
+            }
+            else if(transitionGestureX.floatValue > thresholdGesture){
+                positionType.value = POSITION_TYPE.LEFT
+                if(!vibrateYet){
+                    vibrate(50)
+                    vibrateYet = true
+                }
+            }
+            else if(transitionGestureX.floatValue < -thresholdGesture){
+                positionType.value = POSITION_TYPE.RIGHT
+                if(!vibrateYet){
+                    vibrate(50)
+                    vibrateYet = true
+                }
+            }
+            else{
+                positionType.value = POSITION_TYPE.DEFAULT
+                if(vibrateYet){
+                    vibrate(50)
+                    vibrateYet = false
+                }
+            }
+
+        } else if (event.type == PointerEventType.Release) {
+
+            when(positionType.value){
+                POSITION_TYPE.LEFT -> {
+                    Log.d("Home", "LEFT")
+                    //navController.navigate(Screen.Switch.route)
+                }
+                POSITION_TYPE.RIGHT -> {
+                    Log.d("Home", "RIGHT")
+                    navController.navigate(Screen.Switch.route)
+                }
+                POSITION_TYPE.UP -> {
+                    Log.d("Home", "UP")
+                    navController.navigate(Screen.Settings.route)
+                }
+                POSITION_TYPE.DOWN -> {
+                    Log.d("Home", "DOWN")
+                    navController.navigate(Screen.Camera.route)
+                }
+                POSITION_TYPE.DEFAULT -> {
+                    if (connected.value)
+                        changeScreenClick = true
+                }
+            }
+
+            // Set all the movement to 0
+            transitionGestureX.floatValue = 0f
+            transitionGestureY.floatValue = 0f
+            vibrateYet          = false
+            pressingScreen      = false
+            positionType.value  = POSITION_TYPE.DEFAULT
+
+        } else if (event.type == PointerEventType.Exit) {
+            pressingScreen = false
+        }
+    }
+
+    fun moveTransitionsGesture(){
+        // perc of X movement
+        transitionGestureX.floatValue = ((
+                (fingerMovement.value.x - offsetPress.value.x)
+                ) / maxDistanceGesture).toDouble()
+            .div(4.0).toFloat()
+            .coerceAtMost(1f)
+            .coerceAtLeast(-1f)
+
+        // perc of Y movement
+        transitionGestureY.floatValue = ((
+                (fingerMovement.value.y - offsetPress.value.y)
+                ) / maxDistanceGesture).toDouble()
+            .div(4.0).toFloat()
+            .coerceAtMost(1f)
+            .coerceAtLeast(-1f)
+    }
+
+    /**
+     * Vibrate the phone to create a
+     * simile back pressed button
+     * */
+    fun vibrate(duration: Long) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            // For Android O and above
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                vibrator?.vibrate(VibrationEffect.createPredefined(VibrationEffect.EFFECT_CLICK))
+            }
+            else{
+                vibrator?.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
+            }
+        } else {
+            // For devices below Android O
+            @Suppress("DEPRECATION")
+            vibrator?.vibrate(duration)
         }
     }
 
@@ -255,7 +425,7 @@ class MainViewModel @Inject constructor(
         val preview = Preview.Builder().build()
 
         // Init qr scanner
-        raspberryConnection.initializeScanner(::raspberryCallback)
+        raspberryConnection.initializeScanner(::raspberryCallback, ::startProvisioning)
 
         // Define the camera
         val cameraSelector = CameraSelector.DEFAULT_BACK_CAMERA
@@ -283,66 +453,70 @@ class MainViewModel @Inject constructor(
     }
 
     /**
-     * SCANNED -> get the raspberry code from the qr
-     * and get the ip and other info of the raspberry from
-     * the real_database on firebase and save the code of the raspberry
-     * inside my personal data on the real_database,
-     * create a configurator file
-     * with my uid and the code of the garden and send all this
-     * stuff to the raspberry manager
-     *
-     * START_CONFIGURED -> Start to send the configurator file
-     * to the raspberry
-     *
-     * END_CONFIGURED -> Check if everything goes well,
-     * otherwise restart the process with a limit number of retry
-     *
-     * FINISHED -> check my data and the data of the raspberry
-     * and close the configurator screen
+     * Receive the callback from the RaspberryConnectionManager,
+     * and update the layout
      * */
     fun raspberryCallback(
-        result : RaspberryConnectionManager.RaspberryStatus,
-        qrCode : String? = ""
+        result : RaspberryConnectionManager.RaspberryStatus
     ){
         updateConfigStatus(result)
-        when(result){
-            RaspberryConnectionManager.RaspberryStatus.SCANNED -> {
-                doingConfiguration.value = true
-                viewModelScope.launch(Dispatchers.IO) {
+    }
 
-                    // Get info
-                    val raspberry = handleQrCode(qrCode ?: "")
-                    // Create configurator
-                    val path = createConfiguratorFile()
+    /**
+     * Provisioning
+     * get the code from the qr,
+     * create the configurator file to send,
+     * send the file to the raspberry,
+     * sending the finish statement
+     * */
+    fun startProvisioning(code : String){
 
-                    if(path.isNotEmpty()){
-                        // Set rasp info
-                        raspberryConnection.sourceFilePath      = path
-                        raspberryConnection.raspberryIp         = raspberry["ip"].toString()
-                        raspberryConnection.raspberryUsername   = raspberry["username"].toString()
-                        raspberryConnection.sendConfigFile()
-                    }
+        // Starting the layout
+        doingConfiguration.value = true
+        updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.INIT)
+
+        viewModelScope.launch(Dispatchers.IO) {
+            // To update the layout in case of error
+            try {
+                // Get info from the qr code
+                updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.GET_CODE)
+                val raspberry = handleQrCode(code)
+
+                // Create configurator file to send
+                updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.CREATE_CONFIGURATOR_FILE)
+                val path = createConfiguratorFile()
+
+                if (path.isNotEmpty()) {
+
+                    // Set rasp info
+                    updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.SETTING_RASP_INFO)
+                    raspberryConnection.sourceFilePath = path
+                    raspberryConnection.raspberryIp = raspberry["ip"].toString()
+                    raspberryConnection.raspberryUsername = raspberry["username"].toString()
+
+                    updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.SENDING_FILE)
+                    raspberryConnection.sendConfigFile()
+
+                    // Everything is done correctly
+                    dataInternalRepository.setConnected()
+                } else {
+                    updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.ERROR)
                 }
             }
-            RaspberryConnectionManager.RaspberryStatus.START_CONFIGURED -> {
-                //TODO start animation
+            catch (ex : Exception){
+                updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.ERROR)
             }
-            RaspberryConnectionManager.RaspberryStatus.END_CONFIGURED -> {
-                //TODO end animation
-            }
-            RaspberryConnectionManager.RaspberryStatus.FINISHED -> {
-                dataInternalRepository.setConnected()
-                viewModelScope.launch(Dispatchers.IO)  {
-                    delay(3000)
-                    raspberryCallback(RaspberryConnectionManager.RaspberryStatus.CLOSE, "")
-                }
-            }
-            RaspberryConnectionManager.RaspberryStatus.CLOSE -> {
-
-            }
+            updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.FINISHED)
         }
     }
 
+    /**
+     * Update Config status
+     * I need to update the status of the provisioning
+     * of the raspberry pi on the Main Thread because
+     * statusConfiguration is a MutableLiveData
+     * and they need to be update on the main thread
+     * */
     private fun updateConfigStatus(state : RaspberryConnectionManager.RaspberryStatus){
         viewModelScope.launch(Dispatchers.Main) {
             statusConfiguration.value = state
@@ -377,9 +551,8 @@ class MainViewModel @Inject constructor(
             return dataSnapshot?.getValue(indicator) ?: hashMapOf<String, Any>()
         }
         catch(ex : Exception){
-            Log.e("ViewModel", ex.message.toString())
+            throw Exception("Throw error getting the raspberry info")
         }
-        return hashMapOf()
     }
 
     private fun createConfiguratorFile() : String{
@@ -397,8 +570,7 @@ class MainViewModel @Inject constructor(
 
             println("File created successfully at: ${file.absolutePath}")
         } catch (e: Exception) {
-            println("Error creating the file: ${e.message}")
-            return ""
+            throw Exception("Throw exception creating the configurator file")
         }
         return file.absolutePath
     }
