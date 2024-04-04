@@ -25,6 +25,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,13 +43,16 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.media3.common.Player
 import androidx.media3.ui.PlayerView
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import com.example.smartgarden.R
 import com.example.smartgarden.screens.settings.MainSettingsLayout
@@ -67,19 +71,22 @@ import com.example.smartgarden.viewmodels.SettingsViewModel
 import kotlin.math.abs
 
 @Composable
-fun CameraScreen(navController: NavController){
+fun CameraCore(
+    videoVisibility : MutableState<Boolean> = mutableStateOf(true),
+    cameraUrl : MutableState<String> = mutableStateOf(""),
+    player : Player? = null,
 
-    val viewModel = hiltViewModel<CameraViewModel>()
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
+    screenWidth : Dp = 400.dp,
+    statusHeight : Dp = 5.dp,
+    navigationHeight : Dp = 5.dp,
 
-    // Status bar height
-    val density = LocalDensity.current.density
-    val statusHeight        = Utility.getStatusBarSize(LocalContext.current.resources) / density
-    val navigationHeight    = Utility.getNavigationBarSize(LocalContext.current.resources) / density
-
+    getImageAndVideoUrl : () -> Unit = {},
+    releaseVideo : () -> Unit = {},
+    startVideo : () -> Unit = {},
+    takePicture : () -> Unit = {}
+){
     val visibility by remember {
-        viewModel.videoVisibility
+        videoVisibility
     }
 
     var initVideo by remember {
@@ -89,14 +96,14 @@ fun CameraScreen(navController: NavController){
     LaunchedEffect(Unit){
         if(!initVideo){
             // Get images
-            viewModel.getImageAndVideoUrl()
+            getImageAndVideoUrl()
             initVideo = true
         }
     }
 
     DisposableEffect(Unit){
         onDispose {
-            viewModel.releaseVideo()
+            releaseVideo()
         }
     }
 
@@ -111,7 +118,7 @@ fun CameraScreen(navController: NavController){
             AndroidView(
                 factory = { context ->
                     PlayerView(context).also {
-                        it.player = viewModel.player
+                        it.player = player
                     }
                 },
                 modifier = Modifier
@@ -125,34 +132,68 @@ fun CameraScreen(navController: NavController){
 
             if(visibility) {
                 TopCameraLayout(
-                    viewModel,
-                    statusHeight.dp,
-                    Modifier.fillMaxHeight(0.5f)
+                    Modifier.fillMaxHeight(0.5f),
+                    cameraUrl,
                 ) {
-                    viewModel.startVideo()
+                    startVideo()
                 }
             }
 
             BottomCameraLayout(
-                screenWidth,
                 Modifier
                     .fillMaxHeight(0.5f)
                     .align(Alignment.BottomCenter),
-                navigationHeight.dp
-                )
+                screenWidth,
+                navigationHeight
+            ){
+                takePicture()
+            }
         }
     }
 }
 
+@Preview
+@Composable
+fun CameraPreview(){
+    CameraCore()
+}
+
+@Composable
+fun CameraScreen(navController: NavController){
+
+    val viewModel = hiltViewModel<CameraViewModel>()
+    val configuration = LocalConfiguration.current
+    val screenWidth = configuration.screenWidthDp.dp
+
+    // Status bar height
+    val density = LocalDensity.current.density
+    val statusHeight        = Utility.getStatusBarSize(LocalContext.current.resources) / density
+    val navigationHeight    = Utility.getNavigationBarSize(LocalContext.current.resources) / density
+
+    CameraCore(
+        viewModel.videoVisibility,
+        viewModel.cameraUrl,
+        viewModel.player,
+
+        screenWidth,
+        statusHeight.dp,
+        navigationHeight.dp,
+
+        viewModel::getImageAndVideoUrl,
+        viewModel::releaseVideo,
+        viewModel::startVideo,
+        viewModel::takePicture
+    )
+}
+
 @Composable
 fun TopCameraLayout(
-    viewModel: CameraViewModel,
-    statusBarHeight : Dp,
     modifier: Modifier = Modifier,
+    url : MutableState<String> = mutableStateOf(""),
     clickVideo : () -> Unit){
 
     val cameraUrl by remember {
-        viewModel.cameraUrl
+        url
     }
 
     Box(modifier = modifier){
@@ -241,7 +282,11 @@ fun TopCameraLayout(
 }
 
 @Composable
-fun BottomCameraLayout(width : Dp, modifier: Modifier, navigationHeight : Dp){
+fun BottomCameraLayout(
+    modifier: Modifier,
+    width : Dp, navigationHeight : Dp,
+    takePicture : () -> Unit = {}
+){
 
     Box(modifier = modifier){
 
@@ -298,14 +343,19 @@ fun BottomCameraLayout(width : Dp, modifier: Modifier, navigationHeight : Dp){
             .align(Alignment.BottomCenter)
             .padding(0.dp, 0.dp, 0.dp, navigationHeight + 20.dp)) {
 
-            BottomButton(width = width)
+            BottomButton(width = width){
+                takePicture()
+            }
         }
 
     }
 }
 
 @Composable
-fun BottomButton(width : Dp){
+fun BottomButton(
+    width : Dp,
+    takePicture : () -> Unit = {}
+){
     Row(modifier = Modifier
         .wrapContentSize()
     ) {
@@ -336,7 +386,7 @@ fun BottomButton(width : Dp){
                         .fillMaxSize()
                         .padding(4.dp)
                         .clickable {
-                            //TODO
+                                   // TODO
                         },
                     shadowElevation = 2.dp,
                     tonalElevation = 2.dp,
@@ -382,7 +432,7 @@ fun BottomButton(width : Dp){
                         .fillMaxSize()
                         .padding(6.dp)
                         .clickable {
-                            //TODO
+                            takePicture()
                         },
                     shadowElevation = 2.dp,
                     tonalElevation = 2.dp,

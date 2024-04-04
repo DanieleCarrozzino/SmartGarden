@@ -53,10 +53,10 @@ class MainActivity : ComponentActivity() {
         )
 
         var initRoute = Screen.InitGarden.route
+        auth.setActivityResultLanucher(launcher)
         if(auth.currentUser == null) {
             // set the activity result
             // to sign in with google
-            auth.setActivityResultLanucher(launcher)
             initRoute = Screen.Login.route
         }
         else if(dataInternalRepository.getGarden().size > 0){
