@@ -89,18 +89,6 @@ fun CameraCore(
         videoVisibility
     }
 
-    var initVideo by remember {
-        mutableStateOf(false)
-    }
-
-    LaunchedEffect(Unit){
-        if(!initVideo){
-            // Get images
-            getImageAndVideoUrl()
-            initVideo = true
-        }
-    }
-
     DisposableEffect(Unit){
         onDispose {
             releaseVideo()

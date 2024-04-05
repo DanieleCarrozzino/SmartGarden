@@ -16,6 +16,7 @@ import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.utility.Utility
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -27,16 +28,24 @@ class CameraViewModel @Inject constructor(
     val player: Player
 ) : ViewModel(), Player.Listener {
 
-    var cameraUrl   = mutableStateOf("")
-    var timelapsUrl = mutableStateOf("")
+    var cameraUrl           = mutableStateOf("")
+    var instantCameraUrl    = mutableStateOf("")
+    var timelapsUrl         = mutableStateOf("")
+
+    var buttonEnable = mutableStateOf(true)
 
     // video layout
     var videoVisibility = mutableStateOf(false)
 
+    init {
+        getImageAndVideoUrl()
+    }
+
     fun getImageAndVideoUrl(){
         viewModelScope.launch(Dispatchers.IO) {
-            cameraUrl.value     = storage.getLastImageUrl(dataInternalRepository.getRaspberryCode())
-            timelapsUrl.value   = storage.getTimeLapsUrl(dataInternalRepository.getRaspberryCode())
+            cameraUrl.value         = storage.getLastImageUrl(dataInternalRepository.getRaspberryCode())
+            timelapsUrl.value       = storage.getTimeLapsUrl(dataInternalRepository.getRaspberryCode())
+            instantCameraUrl.value  = storage.getLastTakenImageUrl(dataInternalRepository.getRaspberryCode())
 
             launch(Dispatchers.Main){
                 prepareVideo()
@@ -76,5 +85,15 @@ class CameraViewModel @Inject constructor(
             listOf<String>(dataInternalRepository.getRaspberryCode()),
             hashMapOf("camera" to Utility.getCurrentDateTime())
         )
+        refreshInstantImage()
+    }
+
+    fun refreshInstantImage(){
+        viewModelScope.launch(Dispatchers.IO) {
+            buttonEnable.value = false
+            delay(8000)
+            instantCameraUrl.value  = storage.getLastTakenImageUrl(dataInternalRepository.getRaspberryCode())
+            buttonEnable.value = true
+        }
     }
 }

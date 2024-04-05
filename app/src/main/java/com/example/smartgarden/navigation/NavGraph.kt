@@ -10,6 +10,7 @@ import com.example.smartgarden.screens.CameraScreen
 import com.example.smartgarden.screens.raspberry.ConfigRaspberryScreen
 import com.example.smartgarden.screens.HomeScreen
 import com.example.smartgarden.screens.InitGardenScreen
+import com.example.smartgarden.screens.InstantCameraScreen
 import com.example.smartgarden.screens.raspberry.InitRaspberryScreen
 import com.example.smartgarden.screens.LoginScreen
 import com.example.smartgarden.screens.settings.NotificationSettingsScreen
@@ -25,6 +26,7 @@ sealed class Screen(val route: String) {
     data object Notification : Screen("notification")
     data object Settings : Screen("settings")
     data object Camera : Screen("camera")
+    data object InstantCamera : Screen("instant_camera")
     data object Switch : Screen("switch")
 }
 
@@ -123,6 +125,24 @@ fun SetupNavGraph(
             },
         ){
             SwitchScreen(navController = navController)
+        }
+
+        composable(
+            route = Screen.InstantCamera.route,
+            enterTransition = {
+                slideIntoContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Companion.Right,
+                    animationSpec = tween(durationMillis)
+                )
+            },
+            exitTransition = {
+                slideOutOfContainer(
+                    towards = AnimatedContentTransitionScope.SlideDirection.Companion.Left,
+                    animationSpec = tween(durationMillis)
+                )
+            },
+        ){
+            InstantCameraScreen(navController = navController)
         }
     }
 }

@@ -324,7 +324,7 @@ class MainViewModel @Inject constructor(
             when(positionType.value){
                 POSITION_TYPE.LEFT -> {
                     Log.d("Home", "LEFT")
-                    //navController.navigate(Screen.Switch.route)
+                    navController.navigate(Screen.InstantCamera.route)
                 }
                 POSITION_TYPE.RIGHT -> {
                     Log.d("Home", "RIGHT")
