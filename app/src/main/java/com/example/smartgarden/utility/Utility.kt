@@ -1,15 +1,28 @@
 package com.example.smartgarden.utility
 
+import android.app.DownloadManager
+import android.content.ContentValues
+import android.content.Context
 import android.content.res.Resources
 import android.graphics.Rect
+import android.net.Uri
+import android.os.Build
+import android.os.Environment
+import android.provider.MediaStore
+import android.util.Log
 import android.view.Window
+import androidx.activity.ComponentActivity
+import androidx.annotation.RequiresApi
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.PathNode
 import androidx.compose.ui.platform.LocalContext
+import com.example.smartgarden.viewmodels.CameraViewModel
 import com.google.common.reflect.TypeToken
 import com.google.gson.Gson
+import java.io.File
+import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -187,6 +200,20 @@ class Utility {
         fun getNavigationBarSize(resources : Resources) : Int {
             val statusBarHeightId = resources.getIdentifier("navigation_bar_height", "dimen", "android")
             return resources.getDimensionPixelSize(statusBarHeightId)
+        }
+
+        fun downloadFile(context : Context, url :String, filename : String){
+            Log.d(CameraViewModel.TAG, "Starting download")
+            //val file = File("${context.externalMediaDirs[0].absolutePath}/$filename")
+            val request: DownloadManager.Request = DownloadManager.Request(Uri.parse(url))
+                .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE) // Visibility of the download Notification
+                .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, filename)
+                //.setDestinationUri(Uri.fromFile(file))
+                .setTitle(filename)
+                .setDescription("Downloading")
+
+            val downloadManager = context.getSystemService(ComponentActivity.DOWNLOAD_SERVICE) as DownloadManager?
+            downloadManager?.enqueue(request)
         }
     }
 

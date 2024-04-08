@@ -19,6 +19,7 @@ import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -34,6 +35,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
@@ -74,6 +76,7 @@ import kotlin.math.abs
 fun CameraCore(
     videoVisibility : MutableState<Boolean> = mutableStateOf(true),
     cameraUrl : MutableState<String> = mutableStateOf(""),
+    enableDownload : MutableState<Boolean> = mutableStateOf(true),
     player : Player? = null,
 
     screenWidth : Dp = 400.dp,
@@ -83,7 +86,8 @@ fun CameraCore(
     getImageAndVideoUrl : () -> Unit = {},
     releaseVideo : () -> Unit = {},
     startVideo : () -> Unit = {},
-    takePicture : () -> Unit = {}
+    download : () -> Unit = {},
+    share : () -> Unit = {}
 ){
     val visibility by remember {
         videoVisibility
@@ -132,10 +136,10 @@ fun CameraCore(
                     .fillMaxHeight(0.5f)
                     .align(Alignment.BottomCenter),
                 screenWidth,
-                navigationHeight
-            ){
-                takePicture()
-            }
+                navigationHeight,
+                enableDownload,
+                download, share
+            )
         }
     }
 }
@@ -147,9 +151,7 @@ fun CameraPreview(){
 }
 
 @Composable
-fun CameraScreen(navController: NavController){
-
-    val viewModel = hiltViewModel<CameraViewModel>()
+fun CameraScreen(navController: NavController, viewModel: CameraViewModel){
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
 
@@ -161,6 +163,7 @@ fun CameraScreen(navController: NavController){
     CameraCore(
         viewModel.videoVisibility,
         viewModel.cameraUrl,
+        viewModel.canDownload,
         viewModel.player,
 
         screenWidth,
@@ -170,7 +173,8 @@ fun CameraScreen(navController: NavController){
         viewModel::getImageAndVideoUrl,
         viewModel::releaseVideo,
         viewModel::startVideo,
-        viewModel::takePicture
+        viewModel::download,
+        viewModel::share
     )
 }
 
@@ -273,7 +277,9 @@ fun TopCameraLayout(
 fun BottomCameraLayout(
     modifier: Modifier,
     width : Dp, navigationHeight : Dp,
-    takePicture : () -> Unit = {}
+    enable : MutableState<Boolean> = mutableStateOf(true),
+    download : () -> Unit = {},
+    share : () -> Unit = {}
 ){
 
     Box(modifier = modifier){
@@ -331,9 +337,11 @@ fun BottomCameraLayout(
             .align(Alignment.BottomCenter)
             .padding(0.dp, 0.dp, 0.dp, navigationHeight + 20.dp)) {
 
-            BottomButton(width = width){
-                takePicture()
-            }
+            BottomButton(
+                width = width,
+                enable = enable,
+                download = download,
+                share = share)
         }
 
     }
@@ -342,8 +350,15 @@ fun BottomCameraLayout(
 @Composable
 fun BottomButton(
     width : Dp,
-    takePicture : () -> Unit = {}
+    enable : MutableState<Boolean> = mutableStateOf(true),
+    share : () -> Unit = {},
+    download : () -> Unit = {}
 ){
+
+    val enableDownload by remember {
+        enable
+    }
+
     Row(modifier = Modifier
         .wrapContentSize()
     ) {
@@ -359,75 +374,52 @@ fun BottomButton(
                 color = MaterialTheme.colorScheme.background,
                 fontSize = 15.sp)
 
-            Surface(
-                modifier = Modifier
-                    .padding(15.dp, 0.dp)
-                    .width(width / 7)
-                    .aspectRatio(1f),
-                shadowElevation = 4.dp,
-                tonalElevation = 4.dp,
-                shape = CircleShape,
-                color = LightLightGray){
 
+            if(enableDownload){
                 Surface(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(4.dp)
-                        .clickable {
-                                   // TODO
-                        },
-                    shadowElevation = 2.dp,
-                    tonalElevation = 2.dp,
+                        .padding(15.dp, 0.dp)
+                        .width(width / 6)
+                        .aspectRatio(1f),
+                    shadowElevation = 4.dp,
+                    tonalElevation = 4.dp,
                     shape = CircleShape,
-                    color = White){
-                    Image(
+                    color = LightLightGray){
+
+                    Surface(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(width / 30),
-                        painter = painterResource(id = R.drawable.ic_download),
-                        contentDescription = "",
-                        colorFilter = ColorFilter.tint(Gray))
+                            .fillMaxSize()
+                            .padding(4.dp),
+                        shadowElevation = 2.dp,
+                        tonalElevation = 2.dp,
+                        shape = CircleShape,
+                        color = White){
+                        Box(modifier = Modifier
+                            .fillMaxSize()
+                            .clickable {
+                                download()
+                            }) {
+                            Image(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(width / 30)
+                                    .align(Alignment.Center),
+                                painter = painterResource(id = R.drawable.ic_download),
+                                contentDescription = "",
+                                colorFilter = ColorFilter.tint(Gray)
+                            )
+                        }
+                    }
+
                 }
-
-            }
-        }
-
-        // Picture
-        Column(modifier = Modifier.align(Alignment.CenterVertically)) {
-
-            Text(
-                text = "PHOTO",
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(0.dp, 0.dp, 0.dp, 10.dp),
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.background,
-                fontSize = 18.sp)
-
-            Surface(
-                modifier = Modifier
-                    .padding(0.dp)
-                    .width(width / 5)
-                    .aspectRatio(1f),
-                shadowElevation = 4.dp,
-                tonalElevation = 4.dp,
-                shape = CircleShape,
-                color = LightLightGray
-            ) {
-
-                Surface(
+            }else{
+                CircularProgressIndicator(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(6.dp)
-                        .clickable {
-                            takePicture()
-                        },
-                    shadowElevation = 2.dp,
-                    tonalElevation = 2.dp,
-                    shape = CircleShape,
-                    color = White
-                ) {}
-
+                        .padding(15.dp, 0.dp)
+                        .size(width / 6),
+                    color = Color.White,
+                    strokeWidth = 10.dp
+                )
             }
         }
 
@@ -445,7 +437,7 @@ fun BottomButton(
             Surface(
                 modifier = Modifier
                     .padding(15.dp, 0.dp)
-                    .width(width / 7)
+                    .width(width / 6)
                     .aspectRatio(1f),
                 shadowElevation = 4.dp,
                 tonalElevation = 4.dp,
@@ -456,22 +448,26 @@ fun BottomButton(
                 Surface(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(4.dp)
-                        .clickable {
-                            //TODO
-                        },
+                        .padding(4.dp),
                     shadowElevation = 2.dp,
                     tonalElevation = 2.dp,
                     shape = CircleShape,
                     color = White
                 ) {
-                    Image(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(width / 30),
-                        painter = painterResource(id = R.drawable.ic_share),
-                        contentDescription = "",
-                        colorFilter = ColorFilter.tint(Gray))
+                    Box(modifier = Modifier
+                        .fillMaxSize()
+                        .clickable {
+                            share()
+                        }){
+                        Image(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(width / 30)
+                                .align(Alignment.Center),
+                            painter = painterResource(id = R.drawable.ic_share),
+                            contentDescription = "",
+                            colorFilter = ColorFilter.tint(Gray))
+                    }
                 }
 
             }

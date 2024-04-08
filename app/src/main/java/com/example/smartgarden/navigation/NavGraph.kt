@@ -17,6 +17,7 @@ import com.example.smartgarden.screens.settings.NotificationSettingsScreen
 import com.example.smartgarden.screens.settings.SettingsScreen
 import com.example.smartgarden.screens.settings.SwitchScreen
 import com.example.smartgarden.screens.settings.ThresholdScreen
+import com.example.smartgarden.viewmodels.CameraViewModel
 
 sealed class Screen(val route: String) {
     data object Home : Screen("home")
@@ -33,7 +34,8 @@ sealed class Screen(val route: String) {
 @Composable
 fun SetupNavGraph(
     navController: NavHostController,
-    intiRoute : String
+    intiRoute : String,
+    cameraViewModel: CameraViewModel
 ){
     val durationMillis = 400
     NavHost(
@@ -107,7 +109,7 @@ fun SetupNavGraph(
                 )
             },
         ){
-            CameraScreen(navController = navController)
+            CameraScreen(navController = navController, cameraViewModel)
         }
         composable(
             route = Screen.Switch.route,
@@ -142,7 +144,7 @@ fun SetupNavGraph(
                 )
             },
         ){
-            InstantCameraScreen(navController = navController)
+            InstantCameraScreen(navController = navController, cameraViewModel)
         }
     }
 }

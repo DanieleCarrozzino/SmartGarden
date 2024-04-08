@@ -158,7 +158,7 @@ fun HomeCore(
     val gestureBubbleAnimation : Float by animateFloatAsState(
         if(gestureType == MainViewModel.POSITION_TYPE.DEFAULT) 0f else 1f,
         label = "Gesture navigation animation",
-        animationSpec = tween(400)
+        animationSpec = tween(1000)
     )
 
     // State to track whether data has been fetched

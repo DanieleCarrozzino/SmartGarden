@@ -14,11 +14,4 @@ import dagger.hilt.android.scopes.ViewModelScoped
 @InstallIn(ViewModelComponent::class)
 object VideoModule {
 
-    @Provides
-    @ViewModelScoped
-    fun provideVideoPlayer(@ApplicationContext context : Context): Player {
-        return ExoPlayer.Builder(context)
-            .build()
-    }
-
 }

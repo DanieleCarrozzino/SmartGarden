@@ -114,4 +114,22 @@ object AppModule {
         return DataInternalRepository(shared)
     }
 
+    @Provides
+    @Singleton
+    fun provideVideoPlayer(@ApplicationContext context : Context): Player {
+        return ExoPlayer.Builder(context)
+            .build()
+    }
+
+    @Provides
+    @Singleton
+    fun provideCameraViewModel(
+        storageInterface: FirebaseStorageInterface,
+        database: FirebaseRealTimeDatabase,
+        dataInternalRepository: DataInternalRepository,
+        player: Player,
+    ) : CameraViewModel {
+        return CameraViewModel(storageInterface, database, dataInternalRepository, player)
+    }
+
 }

@@ -1,9 +1,13 @@
 package com.example.smartgarden
 
 import android.Manifest
+import android.app.DownloadManager
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
@@ -23,8 +27,11 @@ import com.example.smartgarden.navigation.Screen
 import com.example.smartgarden.navigation.SetupNavGraph
 import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.ui.theme.SmartGardenTheme
+import com.example.smartgarden.utility.Utility
+import com.example.smartgarden.viewmodels.CameraViewModel
 import com.example.smartgarden.viewmodels.LoginViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import java.io.File
 import javax.inject.Inject
 
 
@@ -33,7 +40,8 @@ class MainActivity : ComponentActivity() {
 
     private lateinit var navController  : NavHostController
     @Inject lateinit var viewModelLogin : LoginViewModel
-    @Inject lateinit var auth : FirebaseAuthenticator
+    @Inject lateinit var auth           : FirebaseAuthenticator
+    @Inject lateinit var cameraViewModel: CameraViewModel
     @Inject lateinit var dataInternalRepository: DataInternalRepository
 
     private val launcher = registerForActivityResult(
@@ -63,11 +71,19 @@ class MainActivity : ComponentActivity() {
             initRoute = Screen.Home.route
         }
 
+        // Init context methods
+        cameraViewModel.downloadFromUrl  = ::downloadFile
+        cameraViewModel.shareFromText    = ::shareText
+
 
         setContent {
             SmartGardenTheme {
                 navController = rememberNavController()
-                SetupNavGraph(navController = navController, initRoute)
+                SetupNavGraph(
+                    navController = navController,
+                    initRoute,
+                    cameraViewModel
+                )
             }
         }
     }
@@ -90,6 +106,21 @@ class MainActivity : ComponentActivity() {
         if (permissionToRequest.isNotEmpty()) {
             ActivityCompat.requestPermissions(this, permissionToRequest.toTypedArray(), 0)
         }
+    }
+
+    private fun downloadFile(url : String){
+        Utility.downloadFile(this, url, "timelapse.mp4")
+    }
+
+    private fun shareText(text : String){
+        val sendIntent: Intent = Intent().apply {
+            action = Intent.ACTION_SEND
+            putExtra(Intent.EXTRA_TEXT, text)
+            type = "text/plain"
+        }
+
+        val shareIntent = Intent.createChooser(sendIntent, null)
+        startActivity(shareIntent)
     }
 
 }

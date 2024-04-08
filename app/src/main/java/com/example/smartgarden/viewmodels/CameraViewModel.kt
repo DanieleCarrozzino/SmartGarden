@@ -1,9 +1,11 @@
 package com.example.smartgarden.viewmodels
 
+import android.app.DownloadManager
+import android.content.Context.DOWNLOAD_SERVICE
 import android.net.Uri
 import android.util.Log
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.core.content.ContextCompat.getSystemService
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.media3.common.MediaItem
@@ -20,6 +22,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+
 @HiltViewModel
 class CameraViewModel @Inject constructor(
     private val storage : FirebaseStorageInterface,
@@ -28,14 +31,23 @@ class CameraViewModel @Inject constructor(
     val player: Player
 ) : ViewModel(), Player.Listener {
 
+    companion object{
+        const val TAG : String = "CameraViewModel"
+    }
+
     var cameraUrl           = mutableStateOf("")
     var instantCameraUrl    = mutableStateOf("")
     var timelapsUrl         = mutableStateOf("")
 
-    var buttonEnable = mutableStateOf(true)
+    var buttonEnable    = mutableStateOf(true)
+    var canDownload     = mutableStateOf(true)
 
     // video layout
     var videoVisibility = mutableStateOf(false)
+
+    // Context methods
+    var downloadFromUrl     : (String) -> Unit = {}
+    var shareFromText       : (String) -> Unit = {}
 
     init {
         getImageAndVideoUrl()
@@ -88,6 +100,17 @@ class CameraViewModel @Inject constructor(
         refreshInstantImage()
     }
 
+    fun download(){
+        Log.d(TAG, "Starting download")
+        canDownload.value = false
+        downloadFromUrl(timelapsUrl.value)
+    }
+
+    fun share(){
+        Log.d(TAG, "Starting share")
+        shareFromText(timelapsUrl.value)
+    }
+
     fun refreshInstantImage(){
         viewModelScope.launch(Dispatchers.IO) {
             buttonEnable.value = false
@@ -95,5 +118,13 @@ class CameraViewModel @Inject constructor(
             instantCameraUrl.value  = storage.getLastTakenImageUrl(dataInternalRepository.getRaspberryCode())
             buttonEnable.value = true
         }
+    }
+
+    /**
+     * The timelapse is been downloaded,
+     * modify the download button
+     * */
+    fun downloaded(){
+        canDownload.value = true
     }
 }
