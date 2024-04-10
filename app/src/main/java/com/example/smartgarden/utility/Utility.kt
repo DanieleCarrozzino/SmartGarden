@@ -25,6 +25,7 @@ import java.io.File
 import java.net.URL
 import java.text.SimpleDateFormat
 import java.util.Calendar
+import java.util.Date
 import java.util.Locale
 
 class Utility {
@@ -214,6 +215,15 @@ class Utility {
 
             val downloadManager = context.getSystemService(ComponentActivity.DOWNLOAD_SERVICE) as DownloadManager?
             downloadManager?.enqueue(request)
+        }
+
+        fun stringToDate(dateString : String) : Date{
+            return stringToDate(dateString, "yyyy-MM-dd_HH-mm-SSS")
+        }
+
+        fun stringToDate(dateString: String, format: String): Date {
+            val sdf = SimpleDateFormat(format, Locale.getDefault())
+            return sdf.parse(dateString) ?: Date()
         }
     }
 

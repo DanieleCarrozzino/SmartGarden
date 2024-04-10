@@ -10,9 +10,10 @@ interface FirebaseStorageInterface {
     suspend fun getLastImageUrl(code : String) : String
 
     /**
-     * Returns the url of the last image taken
+     * Returns the url and the name
+     * of the last image taken
      * */
-    suspend fun getLastTakenImageUrl(code : String) : String
+    suspend fun getLastTakenImageUrl(code : String) : Pair<String, String>
 
     /**
      * Get the url of the time-laps

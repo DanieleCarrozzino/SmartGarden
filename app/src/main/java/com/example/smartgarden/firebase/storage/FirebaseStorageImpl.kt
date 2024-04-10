@@ -44,20 +44,19 @@ class FirebaseStorageImpl @Inject constructor() : FirebaseStorageInterface {
         return timelapsUrl.toString()
     }
 
-    override suspend fun getLastTakenImageUrl(code: String): String {
+    override suspend fun getLastTakenImageUrl(code: String): Pair<String, String> {
         val ref     = storage.reference.child("$code/InstantPictures/")
         val list    = ref.listAll().await()
 
         // Return an empty url if the list of images
         // is empty
         if(list.items.size == 0){
-            return ""
+            return Pair("", "")
         }
 
         // Get the last photo
-        val imageUrl = list.items.last().downloadUrl.await()
-        println("Image URL: $imageUrl")
-
-        return imageUrl.toString()
+        val imageUrl    = list.items.last().downloadUrl.await()
+        val name        = list.items.last().name
+        return Pair(name, imageUrl.toString())
     }
 }

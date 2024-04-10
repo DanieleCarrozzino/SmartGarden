@@ -37,6 +37,7 @@ class CameraViewModel @Inject constructor(
 
     var cameraUrl           = mutableStateOf("")
     var instantCameraUrl    = mutableStateOf("")
+    var instantCameraName   = mutableStateOf("")
     var timelapsUrl         = mutableStateOf("")
 
     var buttonEnable    = mutableStateOf(true)
@@ -57,7 +58,9 @@ class CameraViewModel @Inject constructor(
         viewModelScope.launch(Dispatchers.IO) {
             cameraUrl.value         = storage.getLastImageUrl(dataInternalRepository.getRaspberryCode())
             timelapsUrl.value       = storage.getTimeLapsUrl(dataInternalRepository.getRaspberryCode())
-            instantCameraUrl.value  = storage.getLastTakenImageUrl(dataInternalRepository.getRaspberryCode())
+            val pair = storage.getLastTakenImageUrl(dataInternalRepository.getRaspberryCode())
+            instantCameraUrl.value  = pair.second
+            instantCameraName.value = pair.first
 
             launch(Dispatchers.Main){
                 prepareVideo()
@@ -111,11 +114,17 @@ class CameraViewModel @Inject constructor(
         shareFromText(timelapsUrl.value)
     }
 
-    fun refreshInstantImage(){
+    fun shareInstantImage(){
+        shareFromText(instantCameraUrl.value)
+    }
+
+    private fun refreshInstantImage(){
         viewModelScope.launch(Dispatchers.IO) {
             buttonEnable.value = false
             delay(8000)
-            instantCameraUrl.value  = storage.getLastTakenImageUrl(dataInternalRepository.getRaspberryCode())
+            val pair = storage.getLastTakenImageUrl(dataInternalRepository.getRaspberryCode())
+            instantCameraUrl.value  = pair.second
+            instantCameraName.value = pair.first
             buttonEnable.value = true
         }
     }
