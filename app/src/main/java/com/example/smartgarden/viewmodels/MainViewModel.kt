@@ -62,6 +62,7 @@ import java.io.File
 import java.io.FileWriter
 import javax.inject.Inject
 import kotlin.math.abs
+import kotlin.math.absoluteValue
 import kotlin.random.Random
 
 @HiltViewModel
@@ -163,6 +164,11 @@ class MainViewModel @Inject constructor(
                         // Update layout
                         name.value = garden["name"].toString()
                         date.value = garden["date_creation"].toString()
+
+                        // Unlock the home screen
+                        // Now I got the real data
+                        // update and see
+                        // TODO unlock the screen
                     }
                     catch(ex : Exception){
                         Log.w("ViewModel", ex.message.toString())
@@ -220,6 +226,18 @@ class MainViewModel @Inject constructor(
                         else
                             list
                     }
+                    CHART_TYPE.SOIL_MOISTURE -> {
+                        if(garden.containsKey(GardenKeys.Moisture.key)){
+                            // inside of this list there are
+                            // the last 30 entries of the last
+                            // measures
+                            (garden[GardenKeys.Moisture.key] as ArrayList<ArrayList<Float>>).map {
+                                it.last().toFloat()
+                            }.toMutableList()
+                        }
+                        else
+                            list
+                    }
                     else -> {
                         list
                     }
@@ -238,12 +256,17 @@ class MainViewModel @Inject constructor(
 
                     // Define 3 main values
                     // return 0 if the garden is disconnected
-                    temperatureValue.value  = if(!connected.value) 0 else list.last().toInt()
-                    hydrationValue.value    = if(!connected.value) 0 else Random.nextInt(1, 100)
-                    wellnessValue.value     = if(!connected.value) 0 else Random.nextInt(1, 100)
-
-                    // TODO remove
-                    //connected.value = true
+                    when(type){
+                        CHART_TYPE.TEMPERATURE -> {
+                            temperatureValue.value  = if(!connected.value) 0 else list.last().toInt().absoluteValue
+                        }
+                        CHART_TYPE.SOIL_MOISTURE -> {
+                            wellnessValue.value     = if(!connected.value) 0 else list.last().toInt()
+                        }
+                        CHART_TYPE.HUMIDITY -> {
+                            hydrationValue.value    = if(!connected.value) 0 else Random.nextInt(1, 100)
+                        }
+                    }
                 }
 
                 /*

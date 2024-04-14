@@ -1,6 +1,13 @@
 package com.example.smartgarden.screens
 
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.TweenSpec
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -8,14 +15,12 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
@@ -31,8 +36,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
@@ -51,10 +54,13 @@ import coil.compose.AsyncImage
 import com.example.smartgarden.R
 import com.example.smartgarden.ui.theme.Black
 import com.example.smartgarden.ui.theme.LightLightGray
-import com.example.smartgarden.ui.theme.WhiteOpac
+import com.example.smartgarden.ui.theme.White
+import com.example.smartgarden.ui.theme.color4
+import com.example.smartgarden.ui.theme.color4_dark
+import com.example.smartgarden.ui.theme.ski
+import com.example.smartgarden.ui.theme.ski_dark
 import com.example.smartgarden.utility.Utility
 import com.example.smartgarden.viewmodels.CameraViewModel
-import com.example.smartgarden.viewmodels.MainViewModel
 
 @Composable
 @Preview
@@ -158,7 +164,8 @@ fun InstantCameraCore(
             modifier = Modifier
                 .align(Alignment.TopCenter),
             statusHeight = statusHeight,
-            nameImage = nameImage)
+            nameImage = nameImage,
+            screenWidth = screenWidth)
 
 
         Box(modifier = Modifier
@@ -209,8 +216,15 @@ fun InstantCameraCore(
 fun InfoBoxInstantScreen(
     modifier        : Modifier = Modifier,
     statusHeight    : Dp,
-    nameImage       : String = ""
+    nameImage       : String = "2012-12-12_12-12-123",
+    screenWidth     : Dp = 400.dp
 ){
+    val date = Utility.stringToDate(
+        nameImage.ifEmpty { "2012-12-12_12-12-123" }
+    )
+    val night by remember {
+        mutableStateOf((date.hours > 19 || date.hours < 9))
+    }
 
     var firstOpening by remember {
         mutableStateOf(true)
@@ -219,10 +233,23 @@ fun InfoBoxInstantScreen(
         firstOpening = false
     }
 
-    val cloudAnimation : Float by animateFloatAsState(
-        if(firstOpening) 0f else 1f,
-        label = "Gesture navigation animation",
-        animationSpec = tween(1000)
+    val sky by animateColorAsState(
+        targetValue = if(firstOpening) White else (if(night) ski_dark else ski),
+        animationSpec = TweenSpec(durationMillis = 4000),
+        label = "",
+    )
+
+    val infiniteAnimationValue = rememberInfiniteTransition(label = "")
+    val cloudAnimation by infiniteAnimationValue.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(
+                durationMillis = 3000,
+                easing = LinearEasing
+            ),
+            repeatMode = RepeatMode.Reverse // Change to Mirror for different effect
+        ), label = ""
     )
 
     //***************
@@ -231,50 +258,102 @@ fun InfoBoxInstantScreen(
     Row(
         modifier
             .fillMaxWidth()
-            .padding(statusHeight)
+            .padding(10.dp, statusHeight, 10.dp, 0.dp)
     ) {
 
         Surface(modifier = Modifier
             .fillMaxWidth()
-            .weight(4f),
-            color = Color.White,
+            .weight(4f)
+            .padding(5.dp),
+            color = sky,
             shape = RoundedCornerShape(12.dp),
             tonalElevation = 4.dp,
             shadowElevation = 4.dp
         ){
-            Column(modifier = Modifier) {
-
+            Row(modifier = Modifier.padding(15.dp)) {
+                Image(
+                    modifier = Modifier
+                        .size(26.dp)
+                        .padding(14.dp)
+                        .align(Alignment.CenterVertically),
+                    contentScale = ContentScale.Fit,
+                    painter = painterResource(id = R.drawable.calendar),
+                    contentDescription = "1")
                 Text(
-                    text = /*Utility.stringToDate(nameImage).toString()*/nameImage,
-                    modifier = Modifier.padding(15.dp)
+                    text = date.toString(),
+                    color = if(night) White else Black,
+                    modifier = Modifier
+                        .align(Alignment.CenterVertically)
+                        .padding(7.dp, 0.dp, 5.dp, 0.dp),
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Start,
                 )
             }
         }
 
-        Box(modifier = Modifier.weight(2f)){
-            Image(
+        Surface(modifier = Modifier
+            .fillMaxWidth()
+            .weight(2f)
+            .aspectRatio(1f)
+            .padding(5.dp),
+            color = sky,
+            shape = RoundedCornerShape(12.dp),
+            tonalElevation = 4.dp,
+            shadowElevation = 4.dp
+        ){
+            Text(
+                text = "Meteo",
+                color = if(night) White else Black,
                 modifier = Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(8.dp),
-                contentScale = ContentScale.Fit,
-                painter = painterResource(id = R.drawable.sun),
-                contentDescription = "1")
+                    .align(Alignment.Top)
+                    .fillMaxWidth()
+                    .padding(0.dp, 5.dp, 0.dp, 0.dp),
+                fontWeight = FontWeight.Bold,
+                textAlign = TextAlign.Center
+            )
 
-            Image(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(0.dp, 20.dp, (cloudAnimation * 35).dp, 0.dp),
-                contentScale = ContentScale.Fit,
-                painter = painterResource(id = R.drawable.cloud2),
-                contentDescription = "1")
+            Box(modifier = Modifier.padding(12.dp)){
+                Image(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(14.dp)
+                        .graphicsLayer {
+                            scaleX = 0.910f + cloudAnimation / 4
+                            scaleY = 0.910f + cloudAnimation / 4
+                        },
+                    contentScale = ContentScale.Fit,
+                    painter = painterResource(id = if(night)
+                        R.drawable.moon else R.drawable.sun),
+                    contentDescription = "1")
 
-            Image(
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding((cloudAnimation * 35).dp, 20.dp, 0.dp, 0.dp),
-                contentScale = ContentScale.Fit,
-                painter = painterResource(id = R.drawable.cloud),
-                contentDescription = "1")
+                Image(
+                    modifier = Modifier
+                        .graphicsLayer(
+                            translationX = 20f * cloudAnimation
+                        )
+                        .align(Alignment.BottomCenter)
+                        .padding(0.dp, 20.dp, screenWidth.div(9), (cloudAnimation * 10).dp),
+                    contentScale = ContentScale.Fit,
+                    painter = painterResource(id = R.drawable.cloud2),
+                    contentDescription = "1")
+
+                Image(
+                    modifier = Modifier
+                        .graphicsLayer(
+                            translationX = -20f * cloudAnimation
+                        )
+                        .align(Alignment.BottomCenter)
+                        .padding((screenWidth.div(10)), 20.dp, 0.dp, (cloudAnimation * 6).dp),
+                    contentScale = ContentScale.Fit,
+                    painter = painterResource(id = R.drawable.cloud),
+                    contentDescription = "1")
+            }
         }
     }
+}
+
+@Preview
+@Composable
+fun MeteoBoxPreview(){
+    InfoBoxInstantScreen(statusHeight = 5.dp)
 }

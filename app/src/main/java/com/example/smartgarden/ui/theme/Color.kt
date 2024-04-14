@@ -46,6 +46,7 @@ val Orange1 = Color(0xFFE7B770)
 
 // Switch colors
 val color4 = Color(0xFF8FB2D3)
+val color4_dark = Color(0xFF151E27)
 val color4_light = Color(0xFFECF3FA)
 val Gray90 = Color(0xFFFCFCFC)
 val Gray80 = Color(0xFFEBEBEB)
@@ -55,3 +56,6 @@ val DarkBlue = Color(0xFF04192B)
 val LightBlue = Color(0xFFD0F2EF)
 
 val Red = Color(0xFFFF5722)
+
+val ski = Color(0xFFC5DCF3)
+val ski_dark = Color(0xFF151E27)
