@@ -129,10 +129,6 @@ class MainViewModel @Inject constructor(
         // to keep watch every changes
         startGardenListener()
 
-        // Start charts animation from the values
-        // get from the garden
-        animateCharts()
-
         // Update firebase token
         // TODO update firestore and real time database
         retrieveToken()
@@ -168,7 +164,10 @@ class MainViewModel @Inject constructor(
                         // Unlock the home screen
                         // Now I got the real data
                         // update and see
-                        // TODO unlock the screen
+
+                        // Start charts animation from the values
+                        // get from the garden
+                        animateCharts()
                     }
                     catch(ex : Exception){
                         Log.w("ViewModel", ex.message.toString())
@@ -197,7 +196,7 @@ class MainViewModel @Inject constructor(
                 * */
                 //TODO get real list of values
                 var list = mutableListOf<Float>()
-                for (i in 0 until 30){
+                for (i in 0 until 31){
                     list.add(Random.nextFloat() * 50f)
                 }
 

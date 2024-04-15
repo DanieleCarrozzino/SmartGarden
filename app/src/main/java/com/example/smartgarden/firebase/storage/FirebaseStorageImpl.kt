@@ -1,6 +1,7 @@
 package com.example.smartgarden.firebase.storage
 
 import android.graphics.Bitmap
+import com.example.smartgarden.utility.Utility
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.tasks.await
@@ -28,7 +29,7 @@ class FirebaseStorageImpl @Inject constructor() : FirebaseStorageInterface {
         return imageUrl.toString()
     }
 
-    override suspend fun getTimeLapsUrl(code : String) : String {
+    override suspend fun getTimeLapsUrl(code : String) : Pair<String, String> {
 
         val ref     = storage.reference.child("$code/Timelaps/")
         val list    = ref.listAll().await()
@@ -36,12 +37,12 @@ class FirebaseStorageImpl @Inject constructor() : FirebaseStorageInterface {
         // Return an empty string if the
         // timelaps is not available or not present
         if(list.items.size == 0)
-            return ""
+            return Pair("", "")
 
-        val timelapsUrl = list.items[0].downloadUrl.await()
-        println("Timelaps URL: $timelapsUrl")
+        val timelapseUrl    = list.items[0].downloadUrl.await()
+        val metadata        = list.items[0].metadata.await()
 
-        return timelapsUrl.toString()
+        return Pair(timelapseUrl.toString(), Utility.convertMillisToDateString(metadata.creationTimeMillis))
     }
 
     override suspend fun getLastTakenImageUrl(code: String): Pair<String, String> {

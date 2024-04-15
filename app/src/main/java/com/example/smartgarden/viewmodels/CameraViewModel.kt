@@ -39,6 +39,7 @@ class CameraViewModel @Inject constructor(
     var instantCameraUrl    = mutableStateOf("")
     var instantCameraName   = mutableStateOf("")
     var timelapsUrl         = mutableStateOf("")
+    var timelapseLastDate   = mutableStateOf("")
 
     var buttonEnable    = mutableStateOf(true)
     var canDownload     = mutableStateOf(true)
@@ -57,8 +58,11 @@ class CameraViewModel @Inject constructor(
     fun getImageAndVideoUrl(){
         viewModelScope.launch(Dispatchers.IO) {
             cameraUrl.value         = storage.getLastImageUrl(dataInternalRepository.getRaspberryCode())
-            timelapsUrl.value       = storage.getTimeLapsUrl(dataInternalRepository.getRaspberryCode())
-            val pair = storage.getLastTakenImageUrl(dataInternalRepository.getRaspberryCode())
+            var pair = storage.getTimeLapsUrl(dataInternalRepository.getRaspberryCode())
+            timelapsUrl.value       = pair.first
+            timelapseLastDate.value = pair.second
+
+            pair = storage.getLastTakenImageUrl(dataInternalRepository.getRaspberryCode())
             instantCameraUrl.value  = pair.second
             instantCameraName.value = pair.first
 
@@ -107,6 +111,12 @@ class CameraViewModel @Inject constructor(
         Log.d(TAG, "Starting download")
         canDownload.value = false
         downloadFromUrl(timelapsUrl.value)
+    }
+
+    fun downloadInstant(){
+        Log.d(TAG, "Starting download")
+        canDownload.value = false
+        downloadFromUrl(instantCameraUrl.value)
     }
 
     fun share(){

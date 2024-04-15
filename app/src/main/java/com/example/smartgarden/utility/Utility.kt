@@ -225,6 +225,12 @@ class Utility {
             val sdf = SimpleDateFormat(format, Locale.getDefault())
             return sdf.parse(dateString) ?: Date()
         }
+
+        fun convertMillisToDateString(millis: Long): String {
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+            val date = Date(millis)
+            return dateFormat.format(date)
+        }
     }
 
 }

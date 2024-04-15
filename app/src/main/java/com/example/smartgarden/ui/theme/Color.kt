@@ -16,6 +16,7 @@ val Black = Color(0xFF252525)
 val WhiteOpac = Color(0xB2FFFFFF)
 val WhiteOpacOpac = Color(0x5EFFFFFF)
 val BlackOpac = Color(0xA8000000)
+val BlackOpacOpac = Color(0x77000000)
 
 val Gray = Color(0xFF727272)
 val LightGray = Color(0xFFAFAFAF)

@@ -15,15 +15,19 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,6 +41,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
@@ -49,10 +54,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.example.smartgarden.R
 import com.example.smartgarden.ui.theme.Black
+import com.example.smartgarden.ui.theme.BlackOpac
+import com.example.smartgarden.ui.theme.BlackOpacOpac
+import com.example.smartgarden.ui.theme.Gray
 import com.example.smartgarden.ui.theme.LightLightGray
 import com.example.smartgarden.ui.theme.White
 import com.example.smartgarden.ui.theme.color4
@@ -86,7 +95,10 @@ fun InstantCameraScreen(navController: NavController, viewModel: CameraViewModel
         viewModel.instantCameraName,
         viewModel.instantCameraUrl,
         viewModel.buttonEnable,
-        viewModel::takePicture
+        viewModel.canDownload,
+        viewModel::takePicture,
+        viewModel::downloadInstant,
+        viewModel::shareInstantImage
     )
 }
 
@@ -99,9 +111,12 @@ fun InstantCameraCore(
 
     name    : MutableState<String> = mutableStateOf(""),
     url     : MutableState<String> = mutableStateOf(""),
-    enable  : MutableState<Boolean> = mutableStateOf(true),
+    enable          : MutableState<Boolean> = mutableStateOf(true),
+    enableDownload  : MutableState<Boolean> = mutableStateOf(true),
 
-    takePhoto : () -> Unit = {}
+    takePhoto   : () -> Unit = {},
+    download    : () -> Unit = {},
+    share       : () -> Unit = {}
 ){
 
     val nameImage by remember {
@@ -110,10 +125,6 @@ fun InstantCameraCore(
 
     val urlImage by remember {
         url
-    }
-
-    val buttonEnable by remember {
-        enable
     }
 
     /**
@@ -160,21 +171,105 @@ fun InstantCameraCore(
         //************
         // INFO BOX
         //************
-        InfoBoxInstantScreen(
-            modifier = Modifier
-                .align(Alignment.TopCenter),
-            statusHeight = statusHeight,
-            nameImage = nameImage,
-            screenWidth = screenWidth)
+//        InfoBoxInstantScreen(
+//            modifier = Modifier
+//                .align(Alignment.TopCenter),
+//            statusHeight = statusHeight,
+//            nameImage = nameImage,
+//            screenWidth = screenWidth)
 
+
+        //*********************
+        // BOTTOM CAMERA LAYOUT
+        //*********************
+        BottomPictureLayout(
+            Modifier.align(Alignment.BottomCenter),
+            screenWidth, screenHeight, navigationHeight, enable, enableDownload, takePhoto, download, share
+        )
+    }
+
+}
+
+@Composable
+fun BottomPictureLayout(
+    modifier: Modifier = Modifier,
+    screenWidth  : Dp = 400.dp,
+    screenHeight : Dp = 700.dp,
+    navigationHeight : Dp = 5.dp,
+    enable          : MutableState<Boolean> = mutableStateOf(true),
+    enableDownload  : MutableState<Boolean> = mutableStateOf(true),
+
+    takePhoto   : () -> Unit = {},
+    download    : () -> Unit = {},
+    share       : () -> Unit = {}
+){
+
+    Box(modifier = modifier
+        .fillMaxWidth()
+        .background(BlackOpacOpac)
+    ){
+
+        Row {
+           // Download button
+            DownloadButton(
+                modifier    = Modifier.align(Alignment.CenterVertically).weight(1f),
+                width       = screenWidth,
+                size        = 7,
+                fontSize    = 14.sp,
+                download    = download,
+                enable      = enableDownload
+                )
+
+            // Picture button
+            PictureButton(
+                modifier = Modifier.align(Alignment.CenterVertically).weight(1f),
+                screenWidth, screenHeight, navigationHeight, enable, takePhoto)
+
+            // Share button
+            ShareButton(
+                modifier    = Modifier.align(Alignment.CenterVertically).weight(1f),
+                width       = screenWidth,
+                size        = 7,
+                fontSize    = 14.sp,
+                share       = share
+            )
+        }
+
+
+    }
+}
+
+@Composable
+fun PictureButton(
+    modifier        : Modifier,
+    screenWidth     : Dp = 400.dp,
+    screenHeight    : Dp = 700.dp,
+    navigationHeight : Dp = 5.dp,
+    enable  : MutableState<Boolean> = mutableStateOf(true),
+
+    takePhoto : () -> Unit = {}
+){
+
+    val buttonEnable by remember {
+        enable
+    }
+
+    Column(modifier = modifier.padding(0.dp, 15.dp)) {
+        Text(
+            text = "Picture",
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(0.dp, 15.dp, 0.dp, 10.dp),
+            color = White,
+            fontWeight = FontWeight.Bold,
+        )
 
         Box(modifier = Modifier
-            .align(Alignment.BottomCenter)
+            .align(Alignment.CenterHorizontally)
             .padding(navigationHeight)){
 
             if(enable.value){
                 Surface(modifier = Modifier
-                    .padding(30.dp)
                     .size(screenWidth / 5),
                     shape = CircleShape,
                     color = LightLightGray,
@@ -201,7 +296,6 @@ fun InstantCameraCore(
             else{
                 CircularProgressIndicator(
                     modifier = Modifier
-                        .padding(30.dp)
                         .size(screenWidth / 5),
                     color = Color.White,
                     strokeWidth = 10.dp
@@ -209,7 +303,6 @@ fun InstantCameraCore(
             }
         }
     }
-
 }
 
 @Composable
@@ -354,6 +447,6 @@ fun InfoBoxInstantScreen(
 
 @Preview
 @Composable
-fun MeteoBoxPreview(){
+fun MeteoBoxPreview() {
     InfoBoxInstantScreen(statusHeight = 5.dp)
 }

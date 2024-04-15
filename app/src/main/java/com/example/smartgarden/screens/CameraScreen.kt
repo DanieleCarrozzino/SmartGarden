@@ -47,6 +47,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -76,6 +77,7 @@ import kotlin.math.abs
 fun CameraCore(
     videoVisibility : MutableState<Boolean> = mutableStateOf(true),
     cameraUrl : MutableState<String> = mutableStateOf(""),
+    lastDate    : MutableState<String>  = mutableStateOf(""),
     enableDownload : MutableState<Boolean> = mutableStateOf(true),
     player : Player? = null,
 
@@ -138,6 +140,7 @@ fun CameraCore(
                 screenWidth,
                 navigationHeight,
                 enableDownload,
+                lastDate,
                 download, share
             )
         }
@@ -163,6 +166,7 @@ fun CameraScreen(navController: NavController, viewModel: CameraViewModel){
     CameraCore(
         viewModel.videoVisibility,
         viewModel.cameraUrl,
+        viewModel.timelapseLastDate,
         viewModel.canDownload,
         viewModel.player,
 
@@ -216,60 +220,6 @@ fun TopCameraLayout(
                 painter = painterResource(id = R.drawable.ic_play),
                 contentDescription = "")
         }
-
-        // Top info
-//        Box(modifier = Modifier
-//            .padding(10.dp, statusBarHeight + 10.dp, 10.dp, 10.dp)
-//            .fillMaxWidth(0.3f)
-//            .aspectRatio(1f)
-//            .align(Alignment.TopStart)
-//            .clip(RoundedCornerShape(14.dp))
-//            .background(WhiteOpacOpac)){
-//
-//            Image(
-//                modifier = Modifier
-//                    .fillMaxWidth()
-//                    .fillMaxHeight(0.66f)
-//                    .padding(10.dp),
-//                painter = painterResource(id = R.drawable.sun),
-//                contentDescription = "")
-//
-//            Text("24 s",
-//                modifier = Modifier
-//                    .align(Alignment.BottomCenter)
-//                    .padding(3.dp),
-//                textAlign = TextAlign.Center)
-//
-//        }
-
-        // Bottom text
-        Box(modifier = Modifier
-            .fillMaxWidth()
-            .wrapContentHeight()
-            .padding(10.dp)
-            .align(Alignment.BottomCenter)
-            .clip(RoundedCornerShape(14.dp))
-            .background(WhiteOpacOpac)){
-
-            Column(modifier = Modifier.padding(15.dp)) {
-                Text(
-                    text = "TimeLaps del giardino",
-                    modifier = Modifier.align(Alignment.Start),
-                    textAlign = TextAlign.Start,
-                    fontSize = 15.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-                Text(
-                    text = "Un incredibile timelaps da quando questo giardino è attivo",
-                    modifier = Modifier.align(Alignment.Start),
-                    textAlign = TextAlign.Start,
-                    fontSize = 14.sp,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer,
-                )
-            }
-
-        }
     }
 }
 
@@ -277,10 +227,15 @@ fun TopCameraLayout(
 fun BottomCameraLayout(
     modifier: Modifier,
     width : Dp, navigationHeight : Dp,
-    enable : MutableState<Boolean> = mutableStateOf(true),
+    enable      : MutableState<Boolean> = mutableStateOf(true),
+    lastDate    : MutableState<String>  = mutableStateOf(""),
     download : () -> Unit = {},
     share : () -> Unit = {}
 ){
+
+    val date by remember {
+        lastDate
+    }
 
     Box(modifier = modifier){
 
@@ -298,7 +253,7 @@ fun BottomCameraLayout(
 
                 Column(modifier = Modifier.padding(15.dp)) {
                     Text(
-                        text = "Time daily photo",
+                        text = "Last photo captured",
                         modifier = Modifier.align(Alignment.Start),
                         textAlign = TextAlign.Start,
                         fontSize = 15.sp,
@@ -306,7 +261,7 @@ fun BottomCameraLayout(
                         color = MaterialTheme.colorScheme.onPrimaryContainer,
                     )
                     Text(
-                        text = "Choose a time interval for taking the daily photo",
+                        text = "This is the last photo captured by the camera and added into the timelapse",
                         modifier = Modifier.align(Alignment.Start),
                         textAlign = TextAlign.Start,
                         fontSize = 14.sp,
@@ -317,7 +272,7 @@ fun BottomCameraLayout(
             }
 
             Text(
-                text = "12:00",
+                text = date,
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
                     .padding(10.dp),
@@ -354,96 +309,126 @@ fun BottomButton(
     share : () -> Unit = {},
     download : () -> Unit = {}
 ){
-
-    val enableDownload by remember {
-        enable
-    }
-
     Row(modifier = Modifier
         .wrapContentSize()
     ) {
 
-        // Download
-        Column(modifier = Modifier.align(Alignment.CenterVertically)) {
+        DownloadButton(
+            modifier    = Modifier.align(Alignment.CenterVertically),
+            width       = width,
+            enable      = enable,
+            size        = 6,
+            download    = download
+        )
 
-            Text(
-                text = "download",
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(0.dp, 0.dp, 0.dp, 10.dp),
-                color = MaterialTheme.colorScheme.background,
-                fontSize = 15.sp)
+        ShareButton(
+            modifier    = Modifier.align(Alignment.CenterVertically),
+            width       = width,
+            size        = 6,
+            share       = share
+            )
 
+    }
+}
 
-            if(enableDownload){
-                Surface(
-                    modifier = Modifier
-                        .padding(15.dp, 0.dp)
-                        .width(width / 6)
-                        .aspectRatio(1f),
-                    shadowElevation = 4.dp,
-                    tonalElevation = 4.dp,
-                    shape = CircleShape,
-                    color = LightLightGray){
+@Composable
+fun ShareButton(
+    modifier    : Modifier,
+    width       : Dp,
+    size        : Int = 6,
+    fontSize    : TextUnit = 15.sp,
+    share       : () -> Unit = {}
+){
+    // Share
+    Column(modifier = modifier) {
 
-                    Surface(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(4.dp),
-                        shadowElevation = 2.dp,
-                        tonalElevation = 2.dp,
-                        shape = CircleShape,
-                        color = White){
-                        Box(modifier = Modifier
-                            .fillMaxSize()
-                            .clickable {
-                                download()
-                            }) {
-                            Image(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(width / 30)
-                                    .align(Alignment.Center),
-                                painter = painterResource(id = R.drawable.ic_download),
-                                contentDescription = "",
-                                colorFilter = ColorFilter.tint(Gray)
-                            )
-                        }
-                    }
+        Text(
+            text = "share",
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(0.dp, 0.dp, 0.dp, 10.dp),
+            color       = MaterialTheme.colorScheme.background,
+            fontSize    = fontSize
+        )
 
-                }
-            }else{
-                CircularProgressIndicator(
-                    modifier = Modifier
-                        .padding(15.dp, 0.dp)
-                        .size(width / 6),
-                    color = Color.White,
-                    strokeWidth = 10.dp
-                )
-            }
-        }
-
-        // Share
-        Column(modifier = Modifier.align(Alignment.CenterVertically)) {
-
-            Text(
-                text = "share",
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .padding(0.dp, 0.dp, 0.dp, 10.dp),
-                color = MaterialTheme.colorScheme.background,
-                fontSize = 15.sp)
+        Surface(
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(15.dp, 0.dp)
+                .width(width / size)
+                .aspectRatio(1f),
+            shadowElevation = 4.dp,
+            tonalElevation = 4.dp,
+            shape = CircleShape,
+            color = LightLightGray
+        ) {
 
             Surface(
                 modifier = Modifier
+                    .fillMaxSize()
+                    .padding(4.dp),
+                shadowElevation = 2.dp,
+                tonalElevation = 2.dp,
+                shape = CircleShape,
+                color = White
+            ) {
+                Box(modifier = Modifier
+                    .fillMaxSize()
+                    .clickable {
+                        share()
+                    }) {
+                    Image(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(width / 30)
+                            .align(Alignment.Center),
+                        painter = painterResource(id = R.drawable.ic_share),
+                        contentDescription = "",
+                        colorFilter = ColorFilter.tint(Gray)
+                    )
+                }
+            }
+
+        }
+    }
+}
+
+@Composable
+fun DownloadButton(
+    modifier    : Modifier,
+    width       : Dp,
+    size        : Int = 6,
+    fontSize    : TextUnit = 15.sp,
+    enable      : MutableState<Boolean> = mutableStateOf(true),
+    download    : () -> Unit = {}
+){
+
+    val enableDownload by remember {
+        enable
+    }
+    // Download
+    Column(modifier = modifier) {
+
+        Text(
+            text = "download",
+            modifier = Modifier
+                .align(Alignment.CenterHorizontally)
+                .padding(0.dp, 0.dp, 0.dp, 10.dp),
+            color = MaterialTheme.colorScheme.background,
+            fontSize = fontSize)
+
+
+        if(enableDownload){
+            Surface(
+                modifier = Modifier
+                    .align(Alignment.CenterHorizontally)
                     .padding(15.dp, 0.dp)
-                    .width(width / 6)
+                    .width(width / size)
                     .aspectRatio(1f),
                 shadowElevation = 4.dp,
                 tonalElevation = 4.dp,
                 shape = CircleShape,
-                color = LightLightGray
-            ) {
+                color = LightLightGray){
 
                 Surface(
                     modifier = Modifier
@@ -452,50 +437,41 @@ fun BottomButton(
                     shadowElevation = 2.dp,
                     tonalElevation = 2.dp,
                     shape = CircleShape,
-                    color = White
-                ) {
+                    color = White){
                     Box(modifier = Modifier
                         .fillMaxSize()
                         .clickable {
-                            share()
-                        }){
+                            download()
+                        }) {
                         Image(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(width / 30)
                                 .align(Alignment.Center),
-                            painter = painterResource(id = R.drawable.ic_share),
+                            painter = painterResource(id = R.drawable.ic_download),
                             contentDescription = "",
-                            colorFilter = ColorFilter.tint(Gray))
+                            colorFilter = ColorFilter.tint(Gray)
+                        )
                     }
                 }
 
             }
+        }else{
+            CircularProgressIndicator(
+                modifier = Modifier
+                    .padding(15.dp, 0.dp)
+                    .align(Alignment.CenterHorizontally)
+                    .size(width / size),
+                color = Color.White,
+                strokeWidth = 10.dp
+            )
         }
-
     }
 }
 
 @Composable
 fun BottomImage(modifier: Modifier){
-
     Box(modifier = modifier){
         ChartBoxSemiCircle()
     }
-
-//    // Main Image
-//    Box(modifier = modifier
-//        .width(width * 2)
-//        .aspectRatio(1f)
-//        .offset(x = - width / 2, y = width / 2),) {
-//
-//        Box(
-//            modifier = Modifier
-//                .fillMaxSize()
-//                .clip(CircleShape)
-//                .background(Green80),
-//        ) {
-//
-//        }
-//    }
 }

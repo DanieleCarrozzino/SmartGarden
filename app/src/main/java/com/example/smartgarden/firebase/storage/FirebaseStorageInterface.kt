@@ -18,6 +18,6 @@ interface FirebaseStorageInterface {
     /**
      * Get the url of the time-laps
      * */
-    suspend fun getTimeLapsUrl(code : String) : String
+    suspend fun getTimeLapsUrl(code : String) : Pair<String, String>
 
 }
