@@ -43,6 +43,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -79,11 +80,35 @@ const val animation_login_duration = 15000
 
 @Composable
 fun LoginScreen(navController: NavController){
-
     val viewModel = hiltViewModel<LoginViewModel>()
+    LoginCore(
+        signedInMutable = viewModel.signedIn,
+        navController   = navController,
 
+        emailMutable            = viewModel.email,
+        passwordMutable         = viewModel.password,
+        passwordErrorMutable    = viewModel.passwordError,
+
+        signIn = viewModel::signIn,
+        signInWithGoogle = viewModel::signInWithGoogle
+        )
+}
+
+@Composable
+fun LoginCore(
+    signedInMutable : MutableState<Boolean> = mutableStateOf(false),
+    navController   : NavController,
+
+    emailMutable            : MutableState<String>  = mutableStateOf(""),
+    passwordMutable         : MutableState<String>  = mutableStateOf(""),
+    passwordErrorMutable    : MutableState<Boolean> = mutableStateOf(false),
+
+    signIn              : () -> Unit = {},
+    signInWithGoogle    : () -> Unit = {}
+
+){
     val signedIn by remember {
-        viewModel.signedIn
+        signedInMutable
     }
 
     // Signed in, go to the next screen
@@ -166,18 +191,20 @@ fun LoginScreen(navController: NavController){
     )
 
     var email by remember {
-        viewModel.email
+        emailMutable
     }
 
     var password by remember {
-        viewModel.password
+        passwordMutable
     }
 
     var passwordError by remember {
-        viewModel.passwordError
+        passwordErrorMutable
     }
 
-    var passwordHidden by remember { mutableStateOf(true) }
+    var passwordHidden by remember {
+        mutableStateOf(true)
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -200,7 +227,9 @@ fun LoginScreen(navController: NavController){
         }
 
         Card(
-            modifier = Modifier.padding(0.dp, 80.dp, 0.dp, 0.dp).wrapContentSize(align = Alignment.TopCenter),
+            modifier = Modifier
+                .padding(0.dp, 80.dp, 0.dp, 0.dp)
+                .wrapContentSize(align = Alignment.TopCenter),
             elevation = CardDefaults.elevatedCardElevation(
                 defaultElevation = 8.dp
             ), // Set elevation value for the card
@@ -225,18 +254,6 @@ fun LoginScreen(navController: NavController){
         Box(modifier = Modifier
             .padding(),
             contentAlignment = Alignment.TopStart,){
-
-//            Image(
-//                modifier = Modifier
-//                    .align(Alignment.TopStart)
-//                    .scale(1f)
-//                    .graphicsLayer(
-//                        translationX = -animatedValueX2 + 20f,
-//                        translationY = -animatedValueY2,
-//                        rotationZ = animatedValueRotation2,
-//                    ),
-//                painter = painterResource(id = R.drawable.branch_2),
-//                contentDescription = "plant 1",)
 
             Image(
                 modifier = Modifier
@@ -267,7 +284,8 @@ fun LoginScreen(navController: NavController){
 
         Column(modifier = Modifier
             .padding(0.dp, 0.dp, 0.dp, 20.dp)
-            .fillMaxWidth().fillMaxHeight(),
+            .fillMaxWidth()
+            .fillMaxHeight(),
             verticalArrangement = Arrangement.Bottom
         ) {
 
@@ -359,7 +377,7 @@ fun LoginScreen(navController: NavController){
             ButtonSignIn(modifier = Modifier
                 .padding(10.dp, 30.dp, 10.dp, 10.dp)
                 .background(MaterialTheme.colorScheme.background)
-                .align(Alignment.CenterHorizontally), viewModel::signIn)
+                .align(Alignment.CenterHorizontally), signIn)
 
             Box(modifier = Modifier
                 .fillMaxWidth()
@@ -380,7 +398,7 @@ fun LoginScreen(navController: NavController){
             ButtonSignIn(modifier = Modifier
                 .padding(4.dp)
                 .background(MaterialTheme.colorScheme.background)
-                .align(Alignment.CenterHorizontally), viewModel::signInWithGoogle,
+                .align(Alignment.CenterHorizontally), signInWithGoogle,
                 R.drawable.google)
 
             Box(modifier = Modifier
@@ -450,5 +468,5 @@ fun ButtonSignIn(modifier: Modifier, signIn : () -> Unit, id_icon : Int = -1){
 @Preview(showBackground = true)
 @Composable
 fun Preview(){
-    LoginScreen(rememberNavController())
+    LoginCore(navController = rememberNavController())
 }

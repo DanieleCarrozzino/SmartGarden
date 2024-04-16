@@ -159,7 +159,7 @@ fun TemperatureThreshold(width : Dp, viewModel: SettingsViewModel){
         DoubleSeekBar(
             width,
             viewModel.percMinTemperature, viewModel.percMaxTemperature,
-            viewModel.enabledTemperature, circleSize, marginCircles,
+            viewModel.enabled, circleSize, marginCircles,
             "℃", Orange1){ value, type ->
             when(type){
                 0 -> {

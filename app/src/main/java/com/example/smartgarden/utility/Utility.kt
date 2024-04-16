@@ -227,7 +227,7 @@ class Utility {
         }
 
         fun convertMillisToDateString(millis: Long): String {
-            val dateFormat = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+            val dateFormat = SimpleDateFormat("HH:mm:ss dd/MM/yyyy", Locale.getDefault())
             val date = Date(millis)
             return dateFormat.format(date)
         }

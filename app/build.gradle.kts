@@ -1,3 +1,6 @@
+import java.io.FileInputStream
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -6,9 +9,30 @@ plugins {
     id("com.google.dagger.hilt.android")
 }
 
+val keystorePropertiesFile = rootProject.file("key/keystore.properties")
+val keystoreProperties = Properties()
+
+// Load properties from key.properties file
+keystoreProperties.load(FileInputStream(keystorePropertiesFile))
+
+private val _storeFile       = keystoreProperties.getProperty("storeFile")
+private val _storePassword   = keystoreProperties.getProperty("storePassword")
+private val _keyAlias        = keystoreProperties.getProperty("keyAlias")
+private val _keyPassword     = keystoreProperties.getProperty("keyPassword")
+
 android {
     namespace = "com.example.smartgarden"
     compileSdk = 34
+
+    signingConfigs {
+        create("release") {
+            this.storeFile       = File(_storeFile)
+            this.storePassword   = _storePassword
+
+            this.keyAlias        = _keyAlias
+            this.keyPassword     = _keyPassword
+        }
+    }
 
     defaultConfig {
         applicationId = "com.example.smartgarden"
@@ -24,12 +48,13 @@ android {
     }
 
     buildTypes {
-        release {
+        getByName("release") {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            signingConfig = signingConfigs.getByName("release")
         }
     }
     compileOptions {

@@ -1,15 +1,20 @@
 package com.example.smartgarden.viewmodels
 
 import androidx.compose.runtime.mutableStateOf
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.smartgarden.firebase.authentication.FirebaseAuthenticator
 import com.example.smartgarden.firebase.storage.FirebaseFirestoreInterface
 import com.example.smartgarden.firebase.storage.FirebaseRealTimeDatabase
+import com.example.smartgarden.navigation.Screen
 import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.utility.Utility
 import com.example.smartgarden.utility.Utility.Companion.getCurrentDateTime
 import com.google.firebase.firestore.DocumentSnapshot
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
@@ -29,10 +34,13 @@ class LoginViewModel @Inject constructor(
     val passwordError   = mutableStateOf(false)
 
     // Init garden
-    val loadedGarden = mutableStateOf(false)
-    var listGardens  = mutableListOf<DocumentSnapshot>()
-    private var garden       = hashMapOf<String, Any>()
-    val creationGardenFinished = mutableStateOf(false)
+    val loadedGarden    = mutableStateOf(false)
+    var listGardens     = MutableLiveData<List<DocumentSnapshot>>()
+    private var garden          = hashMapOf<String, Any>()
+    val creationGardenFinished  = mutableStateOf(false)
+
+    // is the garden linked to a raspberry garden?
+    private var linked = false
 
     init {
         auth.setCallback(::resultSignIn)
@@ -93,24 +101,40 @@ class LoginViewModel @Inject constructor(
      * Save the new garden or an old one
      * and go on
      * */
-    fun saveGardenAndGoOn(garden : HashMap<String, Any>){
+    fun saveGardenAndGoOn(hashGarden : HashMap<String, Any>){
         // Save the new garden
-        dataInternalRepository.saveGarden(garden)
+        dataInternalRepository.saveGarden(hashGarden)
+        if(hashGarden.containsKey("connected")){
+            linked = hashGarden["connected"] == "true"
+            if(hashGarden["connected"] == "true") {
+                dataInternalRepository.setConnected()
+                dataInternalRepository.saveRaspberryCode(hashGarden["raspberry_code"].toString())
+            }
+        }
         creationGardenFinished.value = true
+    }
+
+    fun getRoute() : String{
+        return if(linked){
+            Screen.Home.route
+        } else Screen.InitRaspGarden.route
     }
 
     /**
      * getFirestoreData callback
      * */
-    fun resultCallbackGardenFirestore(list : List<DocumentSnapshot>){
-        listGardens = list.toMutableList()
+    private fun resultCallbackGardenFirestore(list : List<DocumentSnapshot>){
+        viewModelScope.launch(Dispatchers.Main) {
+            listGardens.value = list.toMutableList()
+        }
         loadedGarden.value = true
     }
 
     fun createGarden(){
         garden = hashMapOf(
-            "name" to gardenName.value,
-            "date_creation" to getCurrentDateTime()
+            "name"              to gardenName.value,
+            "date_creation"     to getCurrentDateTime(),
+            "connected"         to false
         )
 
         if(auth.currentUser?.uid?.isNotEmpty() == true) {

@@ -20,6 +20,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -40,6 +41,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
@@ -78,7 +80,9 @@ fun InstantCameraPreview(){
 }
 
 @Composable
-fun InstantCameraScreen(navController: NavController, viewModel: CameraViewModel){
+fun InstantCameraScreen(
+    navController: NavController, viewModel: CameraViewModel
+){
     val configuration = LocalConfiguration.current
     val screenWidth  = configuration.screenWidthDp.dp
     val screenHeight = configuration.screenHeightDp.dp
@@ -87,6 +91,14 @@ fun InstantCameraScreen(navController: NavController, viewModel: CameraViewModel
     val density = LocalDensity.current.density
     val statusHeight        = Utility.getStatusBarSize(LocalContext.current.resources) / density
     val navigationHeight    = Utility.getNavigationBarSize(LocalContext.current.resources) / density
+
+    var dataFetched by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!dataFetched) {
+            viewModel.init()
+            dataFetched = true
+        }
+    }
 
     InstantCameraCore(
         screenWidth, screenHeight,
@@ -177,6 +189,12 @@ fun InstantCameraCore(
 //            statusHeight = statusHeight,
 //            nameImage = nameImage,
 //            screenWidth = screenWidth)
+        SmallInfoBoxInstantScreen(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(0.dp, statusHeight + 5.dp, 0.dp, 0.dp),
+            dateNotFormatted = nameImage
+        )
 
 
         //*********************
@@ -209,10 +227,20 @@ fun BottomPictureLayout(
         .background(BlackOpacOpac)
     ){
 
-        Row {
+        Box(modifier = Modifier
+            .width(screenWidth / 5)
+            .height(4.dp)
+            .clip(RoundedCornerShape(0.dp, 0.dp, 3.dp, 3.dp))
+            .background(White)
+            .align(Alignment.TopCenter)
+        )
+
+        Row(modifier = Modifier
+            .wrapContentSize()
+            .align(Alignment.Center)) {
            // Download button
             DownloadButton(
-                modifier    = Modifier.align(Alignment.CenterVertically).weight(1f),
+                modifier    = Modifier.align(Alignment.CenterVertically),
                 width       = screenWidth,
                 size        = 7,
                 fontSize    = 14.sp,
@@ -222,12 +250,14 @@ fun BottomPictureLayout(
 
             // Picture button
             PictureButton(
-                modifier = Modifier.align(Alignment.CenterVertically).weight(1f),
+                modifier = Modifier
+                    .align(Alignment.CenterVertically)
+                    .padding(20.dp, 0.dp),
                 screenWidth, screenHeight, navigationHeight, enable, takePhoto)
 
             // Share button
             ShareButton(
-                modifier    = Modifier.align(Alignment.CenterVertically).weight(1f),
+                modifier    = Modifier.align(Alignment.CenterVertically),
                 width       = screenWidth,
                 size        = 7,
                 fontSize    = 14.sp,
@@ -266,7 +296,7 @@ fun PictureButton(
 
         Box(modifier = Modifier
             .align(Alignment.CenterHorizontally)
-            .padding(navigationHeight)){
+            .padding(0.dp, 0.dp, 0.dp, navigationHeight)){
 
             if(enable.value){
                 Surface(modifier = Modifier
@@ -298,11 +328,47 @@ fun PictureButton(
                     modifier = Modifier
                         .size(screenWidth / 5),
                     color = Color.White,
-                    strokeWidth = 10.dp
+                    strokeWidth = 1.dp
                 )
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun SmallInfoBoxPreview(){
+    SmallInfoBoxInstantScreen()
+}
+
+@Composable
+fun SmallInfoBoxInstantScreen(
+    modifier            : Modifier = Modifier,
+    dateNotFormatted    : String = "2012-12-12_12-12-123"
+){
+    val date by remember {
+        mutableStateOf(Utility.stringToDate(
+            dateNotFormatted.ifEmpty { "2012-12-12_12-12-123" }
+        ))
+    }
+
+    Surface(
+        modifier = modifier,
+        color = White,
+        shape = RoundedCornerShape(18.dp),
+        shadowElevation = 4.dp,
+        tonalElevation = 4.dp
+        ) {
+        Text(
+            text = date.toString(),
+            color = Black,
+            modifier = Modifier
+                .padding(12.dp, 6.dp, 12.dp, 6.dp),
+            fontWeight = FontWeight.Bold,
+            textAlign = TextAlign.Start,
+        )
+    }
+
 }
 
 @Composable

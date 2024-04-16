@@ -82,7 +82,7 @@ import com.example.smartgarden.viewmodels.SettingsViewModel
 
 @Composable
 fun SettingsScreen(navController: NavController){
-    val viewModel       = hiltViewModel<SettingsViewModel>()
+    val viewModel = hiltViewModel<SettingsViewModel>()
 
     // Status bar height
     val density = LocalDensity.current.density
@@ -110,20 +110,21 @@ fun SettingsScreen(navController: NavController){
 @Composable
 fun MainSettingsLayout(navController: NavController, viewModel: SettingsViewModel){
 
-    Column {
+    Column(modifier = Modifier
+        .padding(8.dp)) {
 
         Text(
             text = "Settings screen",
             modifier = Modifier
-                .padding(10.dp),
+                .padding(25.dp),
             fontWeight = FontWeight.Bold,
-            fontSize = 24.sp,
+            fontSize = 20.sp,
             color = MaterialTheme.colorScheme.onBackground
         )
 
         Divider(
             modifier = Modifier
-                .padding(0.dp, 40.dp, 0.dp, 10.dp)
+                .padding(0.dp, 10.dp, 0.dp, 10.dp)
                 .fillMaxWidth(),
             color = Color.Transparent,
             thickness = 0.dp
@@ -155,7 +156,7 @@ fun MainSettingsLayout(navController: NavController, viewModel: SettingsViewMode
 
         Divider(
             modifier = Modifier
-                .padding(horizontal = 0.dp, vertical = 10.dp)
+                .padding(horizontal = 0.dp, vertical = 6.dp)
                 .fillMaxWidth(),
             color = Color.Transparent,
             thickness = 0.dp
@@ -179,7 +180,7 @@ fun singleItemSettings(title : String, description : String, image : Int, color 
 
     Box(
         modifier = Modifier
-            .padding(20.dp, 6.dp)
+            .padding(20.dp, 3.dp)
             .fillMaxWidth()
             .wrapContentHeight()
             .clickable {
@@ -190,7 +191,7 @@ fun singleItemSettings(title : String, description : String, image : Int, color 
         Row {
             Image(
                 modifier = Modifier
-                    .size(50.dp)
+                    .size(40.dp)
                     .padding(10.dp, 0.dp)
                     .align(Alignment.CenterVertically),
                 painter = painterResource(id = image),
@@ -199,7 +200,7 @@ fun singleItemSettings(title : String, description : String, image : Int, color 
 
             Column(
                 modifier = Modifier
-                    .padding(18.dp, 14.dp),
+                    .padding(18.dp, 6.dp),
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.Start
             ) {
@@ -207,10 +208,11 @@ fun singleItemSettings(title : String, description : String, image : Int, color 
                     text = title,
                     fontWeight = FontWeight.Bold,
                     color = color,
-                    fontSize = 18.sp
+                    fontSize = 15.sp
                 )
                 if(description != ""){
-                    Text(text = description,
+                    Text(
+                        text = description,
                         color = color)
                 }
 

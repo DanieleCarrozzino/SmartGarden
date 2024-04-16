@@ -154,7 +154,9 @@ fun CameraPreview(){
 }
 
 @Composable
-fun CameraScreen(navController: NavController, viewModel: CameraViewModel){
+fun CameraScreen(
+    navController: NavController, viewModel: CameraViewModel
+){
     val configuration = LocalConfiguration.current
     val screenWidth = configuration.screenWidthDp.dp
 
@@ -162,6 +164,14 @@ fun CameraScreen(navController: NavController, viewModel: CameraViewModel){
     val density = LocalDensity.current.density
     val statusHeight        = Utility.getStatusBarSize(LocalContext.current.resources) / density
     val navigationHeight    = Utility.getNavigationBarSize(LocalContext.current.resources) / density
+
+    var dataFetched by remember { mutableStateOf(false) }
+    LaunchedEffect(Unit) {
+        if (!dataFetched) {
+            viewModel.init()
+            dataFetched = true
+        }
+    }
 
     CameraCore(
         viewModel.videoVisibility,
@@ -314,7 +324,7 @@ fun BottomButton(
     ) {
 
         DownloadButton(
-            modifier    = Modifier.align(Alignment.CenterVertically),
+            modifier    = Modifier.align(Alignment.CenterVertically).padding(15.dp, 0.dp),
             width       = width,
             enable      = enable,
             size        = 6,
@@ -322,7 +332,7 @@ fun BottomButton(
         )
 
         ShareButton(
-            modifier    = Modifier.align(Alignment.CenterVertically),
+            modifier    = Modifier.align(Alignment.CenterVertically).padding(15.dp, 0.dp),
             width       = width,
             size        = 6,
             share       = share
@@ -354,7 +364,7 @@ fun ShareButton(
         Surface(
             modifier = Modifier
                 .align(Alignment.CenterHorizontally)
-                .padding(15.dp, 0.dp)
+                .padding(0.dp, 0.dp)
                 .width(width / size)
                 .aspectRatio(1f),
             shadowElevation = 4.dp,
@@ -422,7 +432,7 @@ fun DownloadButton(
             Surface(
                 modifier = Modifier
                     .align(Alignment.CenterHorizontally)
-                    .padding(15.dp, 0.dp)
+                    .padding(0.dp, 0.dp)
                     .width(width / size)
                     .aspectRatio(1f),
                 shadowElevation = 4.dp,
@@ -459,11 +469,11 @@ fun DownloadButton(
         }else{
             CircularProgressIndicator(
                 modifier = Modifier
-                    .padding(15.dp, 0.dp)
+                    .padding(0.dp, 0.dp)
                     .align(Alignment.CenterHorizontally)
                     .size(width / size),
                 color = Color.White,
-                strokeWidth = 10.dp
+                strokeWidth = 1.dp
             )
         }
     }

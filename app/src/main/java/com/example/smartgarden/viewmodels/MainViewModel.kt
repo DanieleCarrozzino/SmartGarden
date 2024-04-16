@@ -35,6 +35,7 @@ import com.example.smartgarden.manager.RaspberryConnectionManager
 import com.example.smartgarden.navigation.Screen
 import com.example.smartgarden.objects.CHART_TYPE
 import com.example.smartgarden.objects.ChartObject
+import com.example.smartgarden.objects.DatabaseEntry
 import com.example.smartgarden.objects.GardenKeys
 import com.example.smartgarden.repository.DataInternalRepository
 import com.example.smartgarden.utility.Utility.Companion.convertJsonToHashMap
@@ -120,14 +121,14 @@ class MainViewModel @Inject constructor(
     }
 
     fun init(){
-
         // To know if I connect myself already to
         // the raspberry pi
-        connected.value = /*dataInternalRepository.getConnected()*/true
+        connected.value = dataInternalRepository.getConnected()
 
         // Start real time database listener
         // to keep watch every changes
-        startGardenListener()
+        if(connected.value)
+            startGardenListener()
 
         // Update firebase token
         // TODO update firestore and real time database
@@ -237,9 +238,16 @@ class MainViewModel @Inject constructor(
                         else
                             list
                     }
-                    else -> {
+                    CHART_TYPE.HUMIDITY -> {
                         list
                     }
+                }
+
+                // every list must be length 30
+                // it should happen only when I restart
+                // the garden
+                for(i in 0..30 - list.size){
+                    list.add(if(list.size > 0) list[0] else 20f)
                 }
 
                 launch(Dispatchers.Main) {
@@ -520,7 +528,7 @@ class MainViewModel @Inject constructor(
                     raspberryConnection.sendConfigFile()
 
                     // Everything is done correctly
-                    dataInternalRepository.setConnected()
+                    raspberryConnected()
                 } else {
                     updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.ERROR)
                 }
@@ -530,6 +538,26 @@ class MainViewModel @Inject constructor(
             }
             updateConfigStatus(RaspberryConnectionManager.RaspberryStatus.FINISHED)
         }
+    }
+
+    /**
+     * Everything goes well,
+     * So I have to update the garden saying that this user
+     * has linked his profile with a raspberry garden over
+     * firebase and locally
+     * */
+    private fun raspberryConnected(){
+        dataInternalRepository.setConnected()
+        startGardenListener()
+
+        // update firebase
+        garden["connected"]         = true
+        garden["raspberry_code"]    = dataInternalRepository.getRaspberryCode()
+        database.updateNode(
+            DatabaseEntry.Garden.key,
+            listOf(),
+            garden
+        )
     }
 
     /**

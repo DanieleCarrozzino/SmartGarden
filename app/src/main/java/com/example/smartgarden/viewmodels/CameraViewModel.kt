@@ -51,8 +51,9 @@ class CameraViewModel @Inject constructor(
     var downloadFromUrl     : (String) -> Unit = {}
     var shareFromText       : (String) -> Unit = {}
 
-    init {
-        getImageAndVideoUrl()
+    fun init() {
+        if(dataInternalRepository.getConnected())
+            getImageAndVideoUrl()
     }
 
     fun getImageAndVideoUrl(){

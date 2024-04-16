@@ -73,6 +73,7 @@ import com.example.smartgarden.ui.theme.Green80
 import com.example.smartgarden.ui.theme.LightBlue
 import com.example.smartgarden.ui.theme.Orange80
 import com.example.smartgarden.utility.Utility
+import com.example.smartgarden.viewmodels.CameraViewModel
 import com.example.smartgarden.viewmodels.MainViewModel
 import kotlin.math.abs
 
@@ -80,10 +81,12 @@ import kotlin.math.abs
 @Composable
 fun HomeScreen(navController: NavController){
 
-    val viewModel = hiltViewModel<MainViewModel>()
-    val configuration = LocalConfiguration.current
-    val screenWidth = configuration.screenWidthDp.dp
-    val screenHeight = configuration.screenHeightDp.dp
+    val viewModel       = hiltViewModel<MainViewModel>()
+    val cameraViewModel = hiltViewModel<CameraViewModel>()
+
+    val configuration   = LocalConfiguration.current
+    val screenWidth     = configuration.screenWidthDp.dp
+    val screenHeight    = configuration.screenHeightDp.dp
 
     // Status bar height
     val density = LocalDensity.current.density
@@ -105,6 +108,7 @@ fun HomeScreen(navController: NavController){
         viewModel.hydrationValue,
         viewModel.wellnessValue,
         viewModel::init,
+        cameraViewModel::init,
         viewModel::managePointerEvent
     )
 }
@@ -134,7 +138,8 @@ fun HomeCore(
     hydration   : MutableLiveData<Int>      = MutableLiveData<Int>(),
     wellness    : MutableLiveData<Int>      = MutableLiveData<Int>(),
 
-    init: () -> Unit = {},
+    init        : () -> Unit = {},
+    initCamera  : () -> Unit = {},
     managePointer: (PointerEvent, NavController) -> Unit = {_, _ ->}
 ){
 
@@ -166,6 +171,7 @@ fun HomeCore(
     LaunchedEffect(Unit) {
         if (!dataFetched) {
             init()
+            initCamera()
             dataFetched = true
         }
     }
@@ -397,7 +403,7 @@ fun DirectionBoxBig(alignment: Alignment = Alignment.CenterStart,
             .graphicsLayer {
                 scaleX = anim * 10f
                 scaleY = anim * 10f
-                alpha  = 1 - anim
+                alpha = 1 - anim
                 this.translationY = translationY.toPx()
                 this.translationX = translationX.toPx()
             }
@@ -407,8 +413,10 @@ fun DirectionBoxBig(alignment: Alignment = Alignment.CenterStart,
             .clip(CircleShape)
             .background(
                 brush = Brush.radialGradient(
-                    colors = listOf(Color(0x00000000), color, Color(0x00000000)
-                ))
+                    colors = listOf(
+                        Color(0x00000000), color, Color(0x00000000)
+                    )
+                )
             ))
 
         //***********
@@ -418,7 +426,7 @@ fun DirectionBoxBig(alignment: Alignment = Alignment.CenterStart,
         //***********
         Box(modifier = Modifier
             .graphicsLayer {
-                alpha  = anim
+                alpha = anim
                 scaleX = anim
                 scaleY = anim
                 this.translationX = translationX.toPx()
@@ -435,7 +443,12 @@ fun DirectionBoxBig(alignment: Alignment = Alignment.CenterStart,
 
             Column(modifier = Modifier
                 .align(intAlignment)
-                .padding(width / 12, status.coerceAtLeast(5.dp), width / 12, navigation.coerceAtLeast(5.dp))) {
+                .padding(
+                    width / 12,
+                    status.coerceAtLeast(5.dp),
+                    width / 12,
+                    navigation.coerceAtLeast(5.dp)
+                )) {
                 Image(painter = painterResource(id = imageId),
                     contentDescription = "",
                     modifier = Modifier

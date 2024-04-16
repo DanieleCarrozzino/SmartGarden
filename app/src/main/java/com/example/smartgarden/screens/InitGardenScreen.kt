@@ -1,5 +1,7 @@
 package com.example.smartgarden.screens
 
+import android.util.Log
+import android.view.ViewManager
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -35,7 +37,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -59,6 +63,7 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.example.smartgarden.R
 import com.example.smartgarden.viewmodels.LoginViewModel
+import com.google.firebase.database.DataSnapshot
 import com.google.firebase.firestore.DocumentSnapshot
 
 /**
@@ -74,14 +79,53 @@ import com.google.firebase.firestore.DocumentSnapshot
 
 @Composable
 fun InitGardenScreen(navController: NavController){
-
     val viewModel = hiltViewModel<LoginViewModel>()
+    val list = viewModel.listGardens.observeAsState().value
+    InitGardenCore(
+        navController           = navController,
+        getFirestoreData        = viewModel::getFirestoreData,
+        creationGardenFinished  = viewModel.creationGardenFinished,
+        loadedGardenMutable     = viewModel.loadedGarden,
+        gardenNameMutable       = viewModel.gardenName,
+        listGardens             = list ?: listOf<DocumentSnapshot>(),
+        createGarden            = viewModel::createGarden,
+        saveGardenAndGoOn       = viewModel::saveGardenAndGoOn,
+        getRoute                = viewModel::getRoute
+    )
+}
 
+@Preview
+@Composable
+fun InitGardenPreview(){
+    InitGardenCore(navController = rememberNavController())
+}
+
+@Preview
+@Composable
+fun InitGardenPreviewValidated(){
+    InitGardenCore(
+        navController = rememberNavController(),
+        loadedGardenMutable = mutableStateOf(true),
+        )
+}
+
+@Composable
+fun InitGardenCore(
+    navController: NavController,
+    getFirestoreData : () -> Unit = {},
+    creationGardenFinished  : MutableState<Boolean>     = mutableStateOf(false),
+    loadedGardenMutable     : MutableState<Boolean>     = mutableStateOf(false),
+    gardenNameMutable       : MutableState<String>      = mutableStateOf(""),
+    listGardens             : List<DocumentSnapshot>    = listOf<DocumentSnapshot>(),
+    saveGardenAndGoOn       : (HashMap<String, Any>) -> Unit = {},
+    createGarden            : () -> Unit    = {},
+    getRoute                : () -> String  = {""}
+){
     // State to track whether data has been fetched
     var dataFetched by remember { mutableStateOf(false) }
     LaunchedEffect(Unit) {
         if (!dataFetched) {
-            viewModel.getFirestoreData()
+            getFirestoreData()
             dataFetched = true
         }
     }
@@ -89,15 +133,15 @@ fun InitGardenScreen(navController: NavController){
     // Navigate to the next screen
     // if you have finished
     val finished by remember {
-        viewModel.creationGardenFinished
+        creationGardenFinished
     }
 
     if(finished){
-        navController.navigate("init_config_raspberry")
+        navController.navigate(getRoute())
     }
 
     val loadedGarden by remember {
-        viewModel.loadedGarden
+        loadedGardenMutable
     }
 
     // Get the gardens to show
@@ -107,15 +151,22 @@ fun InitGardenScreen(navController: NavController){
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            if (viewModel.listGardens.size > 0){
-                ListOfGardens(list = viewModel.listGardens)
+            if (listGardens.isNotEmpty()){
+                ListOfGardens(
+                    list                = listGardens,
+                    saveGardenAndGoOn   = saveGardenAndGoOn,
+                    gardenNameMutable   = gardenNameMutable
+                )
             }
             else {
                 EmptyGardens(
                     id_image = R.drawable.garden_xl,
                     Modifier
                         .fillMaxWidth()
-                        .wrapContentHeight())
+                        .wrapContentHeight(),
+                    gardenNameMutable = gardenNameMutable,
+                    createGarden = createGarden
+                    )
             }
         }
     }
@@ -136,14 +187,17 @@ fun InitGardenScreen(navController: NavController){
 }
 
 @Composable
-fun ListOfGardens(list : List<DocumentSnapshot>){
+fun ListOfGardens(
+    list                : List<DocumentSnapshot>,
+    saveGardenAndGoOn   : (HashMap<String, Any>) -> Unit = {},
+    gardenNameMutable   : MutableState<String> = mutableStateOf(""),
+    createGarden : () -> Unit = {}
+){
 
     val tmpList = list.toMutableList()
     tmpList.removeIf {
         it.id == "firebase_token"
     }
-
-    val viewModel = hiltViewModel<LoginViewModel>()
 
     LazyColumn(
         modifier = Modifier
@@ -182,12 +236,16 @@ fun ListOfGardens(list : List<DocumentSnapshot>){
                     shape = RoundedCornerShape(30.dp, 30.dp, 30.dp, 30.dp)
                 )
                 .clickable {
+                    Log.d("GardenScreen", "Click")
                     val garden = hashMapOf<String, Any>(
-                        "name" to item["name"].toString(),
-                        "id" to item["id"].toString(),
-                        "date_creation" to item["date_creation"].toString()
+                        "name"          to item["name"].toString(),
+                        "id"            to item["id"].toString(),
+                        "date_creation" to item["date_creation"].toString(),
+                        "connected"     to if(item.contains("connected"))
+                            item["connected"].toString()
+                        else false.toString()
                     )
-                    viewModel.saveGardenAndGoOn(garden)
+                    saveGardenAndGoOn(garden)
                 }
                 .background(MaterialTheme.colorScheme.onSecondary)
                 .defaultMinSize(minWidth = 0.dp, minHeight = 0.dp)
@@ -203,7 +261,10 @@ fun ListOfGardens(list : List<DocumentSnapshot>){
                 id_image = R.drawable.garden_xl,
                 Modifier
                     .fillMaxWidth()
-                    .wrapContentHeight())
+                    .wrapContentHeight(),
+                gardenNameMutable = gardenNameMutable,
+                createGarden = createGarden
+                )
 
             Spacer(modifier = Modifier.height(20.dp))
         }
@@ -253,11 +314,14 @@ fun SingleGardenItem(modifier : Modifier, name : String, creation : String){
 }
 
 @Composable
-fun EmptyGardens(id_image : Int, modifier: Modifier){
+fun EmptyGardens(
+    id_image : Int, modifier: Modifier,
+    gardenNameMutable : MutableState<String> = mutableStateOf(""),
+    createGarden : () -> Unit = {}
+){
 
-    val viewModel = hiltViewModel<LoginViewModel>()
     var gardenName by remember {
-        viewModel.gardenName
+        gardenNameMutable
     }
 
     Column(modifier = modifier) {
@@ -311,7 +375,7 @@ fun EmptyGardens(id_image : Int, modifier: Modifier){
                 .padding(15.dp)
                 .background(MaterialTheme.colorScheme.background)
                 .align(Alignment.CenterHorizontally),
-            viewModel::createGarden,
+            createGarden,
             "Create garden",
             null,
         )
@@ -433,10 +497,4 @@ fun PlaceHolder(id_image : Int, text : String, modifier: Modifier){
             fontWeight = FontWeight.Bold
         )
     }
-}
-
-@Preview
-@Composable
-fun preview(){
-    InitGardenScreen(navController = rememberNavController())
 }

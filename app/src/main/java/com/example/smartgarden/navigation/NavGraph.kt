@@ -23,6 +23,7 @@ sealed class Screen(val route: String) {
     data object Home : Screen("home")
     data object Login : Screen("login")
     data object InitGarden : Screen("init_garden")
+    data object InitRaspGarden : Screen("init_raspberry_garden")
     data object Threshold : Screen("threshold")
     data object Notification : Screen("notification")
     data object Settings : Screen("settings")
@@ -63,7 +64,7 @@ fun SetupNavGraph(
             ConfigRaspberryScreen(navController = navController)
         }
         composable(
-            route = "init_config_raspberry"
+            route = Screen.InitRaspGarden.route
         ){
             InitRaspberryScreen(navController = navController)
         }
