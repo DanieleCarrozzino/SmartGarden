@@ -130,11 +130,6 @@ fun InstantCameraCore(
     download    : () -> Unit = {},
     share       : () -> Unit = {}
 ){
-
-    val nameImage by remember {
-        name
-    }
-
     val urlImage by remember {
         url
     }
@@ -193,7 +188,7 @@ fun InstantCameraCore(
             modifier = Modifier
                 .align(Alignment.TopCenter)
                 .padding(0.dp, statusHeight + 5.dp, 0.dp, 0.dp),
-            dateNotFormatted = nameImage
+            dateNotFormatted = name
         )
 
 
@@ -344,12 +339,10 @@ fun SmallInfoBoxPreview(){
 @Composable
 fun SmallInfoBoxInstantScreen(
     modifier            : Modifier = Modifier,
-    dateNotFormatted    : String = "2012-12-12_12-12-123"
+    dateNotFormatted    : MutableState<String> = mutableStateOf("")
 ){
     val date by remember {
-        mutableStateOf(Utility.stringToDate(
-            dateNotFormatted.ifEmpty { "2012-12-12_12-12-123" }
-        ))
+        dateNotFormatted
     }
 
     Surface(
@@ -360,7 +353,9 @@ fun SmallInfoBoxInstantScreen(
         tonalElevation = 4.dp
         ) {
         Text(
-            text = date.toString(),
+            text = Utility.stringToDate(
+                date.ifEmpty { "2012-12-12_12-12-123" }
+            ).toString(),
             color = Black,
             modifier = Modifier
                 .padding(12.dp, 6.dp, 12.dp, 6.dp),

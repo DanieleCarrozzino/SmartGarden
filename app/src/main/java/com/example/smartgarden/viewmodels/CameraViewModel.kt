@@ -87,7 +87,7 @@ class CameraViewModel @Inject constructor(
     }
 
     fun releaseVideo(){
-        player.release()
+        //player.release()
     }
 
     override fun onPlaybackStateChanged(playbackState: Int) {

@@ -1,5 +1,6 @@
 package com.example.smartgarden.screens.raspberry
 
+import android.content.Context
 import android.util.Log
 import android.view.ViewGroup
 import androidx.camera.lifecycle.ProcessCameraProvider
@@ -28,6 +29,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.runtime.mutableStateOf
@@ -41,12 +43,15 @@ import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.LifecycleOwner
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.smartgarden.R
 import com.example.smartgarden.manager.RaspberryConnectionManager
 import com.example.smartgarden.navigation.Screen
@@ -54,28 +59,73 @@ import com.example.smartgarden.screens.CustomSeekBar
 import com.example.smartgarden.ui.theme.Green1
 import com.example.smartgarden.utility.Utility
 import com.example.smartgarden.viewmodels.MainViewModel
+import com.google.common.util.concurrent.ListenableFuture
 
 @Composable
 fun ConfigRaspberryScreen(navController: NavController){
 
     val viewModel = hiltViewModel<MainViewModel>()
 
-    val context = LocalContext.current
-    val lifecycleOwner = LocalLifecycleOwner.current
+    val context         = LocalContext.current
+    val lifecycleOwner  = LocalLifecycleOwner.current
 
     // Status and navigation bar height
-    val density = LocalDensity.current.density
-    val statusHeight = Utility.getStatusBarSize(context.resources) / density
-    val navigationHeight = Utility.getNavigationBarSize(context.resources) / density
+    val density             = LocalDensity.current.density
+    val statusHeight        = Utility.getStatusBarSize(context.resources) / density
+    val navigationHeight    = Utility.getNavigationBarSize(context.resources) / density
 
-    val cameraProviderFuture = ProcessCameraProvider.getInstance(context)
-
-    val previewView = PreviewView(context)
-    previewView.layoutParams = ViewGroup.LayoutParams(
+    val cameraProviderFuture    = ProcessCameraProvider.getInstance(context)
+    val previewView             = PreviewView(context)
+    previewView.layoutParams    = ViewGroup.LayoutParams(
         ViewGroup.LayoutParams.MATCH_PARENT,
         ViewGroup.LayoutParams.MATCH_PARENT
     )
 
+    ConfigRaspberryCore(
+        navController           = navController,
+        statusHeight            = statusHeight,
+        navigationHeight        = navigationHeight,
+        previewView             = previewView,
+        cameraProviderFuture    = cameraProviderFuture,
+        lifecycleOwner          = lifecycleOwner,
+        context                 = context,
+        doingConfiguration      = viewModel.doingConfiguration,
+        bindCamera              = viewModel::bindCameraPreview
+    )
+}
+
+@Preview
+@Composable
+fun ConfigRaspberryPreview(){
+
+    val context         = LocalContext.current
+    val lifecycleOwner  = LocalLifecycleOwner.current
+
+    val cameraProviderFuture    = ProcessCameraProvider.getInstance(context)
+    val previewView             = PreviewView(context)
+
+    ConfigRaspberryCore(
+        navController           = rememberNavController(),
+        statusHeight            = 0f,
+        navigationHeight        = 0f,
+        previewView             = previewView,
+        cameraProviderFuture    = cameraProviderFuture,
+        lifecycleOwner          = lifecycleOwner,
+        context                 = context
+    )
+}
+
+@Composable
+fun ConfigRaspberryCore(
+    navController           : NavController,
+    statusHeight            : Float, navigationHeight : Float,
+    previewView             : PreviewView,
+    cameraProviderFuture    : ListenableFuture<ProcessCameraProvider>,
+    lifecycleOwner          : LifecycleOwner,
+    context                 : Context,
+    doingConfiguration      : MutableState<Boolean> = mutableStateOf(false),
+    bindCamera : (ProcessCameraProvider, PreviewView, LifecycleOwner) -> Unit = {_, _, _ ->}
+    ){
     Surface(
         modifier = Modifier
             .fillMaxSize()
@@ -88,7 +138,7 @@ fun ConfigRaspberryScreen(navController: NavController){
             update = { view ->
                 cameraProviderFuture.addListener({
                     val cameraProvider = cameraProviderFuture.get()
-                    viewModel.bindCameraPreview(cameraProvider, view, lifecycleOwner)
+                    bindCamera(cameraProvider, view, lifecycleOwner)
                 }, ContextCompat.getMainExecutor(context))
             }
         )
@@ -111,14 +161,14 @@ fun ConfigRaspberryScreen(navController: NavController){
             IconTitleAndDescription(
                 iconId = R.drawable.qr_icon,
                 title = "QR Camera Connection: Linking Your Raspberry Garden",
-                description = "To link your Raspberry Garden, simply aim your camera at the QR code and watch the magic unfold as the connection syncs",
+                description = "To link your Raspberry Garden, connect this device to the same network of your raspberry and then simply aim your camera at the QR code",
                 Modifier.padding(20.dp)
             )
 
         }
 
         val config by remember {
-            viewModel.doingConfiguration
+            doingConfiguration
         }
 
         if(config){
