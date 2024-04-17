@@ -108,8 +108,8 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    private fun downloadFile(url : String){
-        Utility.downloadFile(this, url, "timelapse.mp4")
+    private fun downloadFile(url : String, filename : String = "image"){
+        Utility.downloadFile(this, url, filename)
     }
 
     private fun shareText(text : String){
@@ -121,6 +121,11 @@ class MainActivity : ComponentActivity() {
 
         val shareIntent = Intent.createChooser(sendIntent, null)
         startActivity(shareIntent)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        cameraViewModel.releaseVideo()
     }
 
 }

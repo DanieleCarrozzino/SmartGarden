@@ -86,19 +86,12 @@ fun CameraCore(
     navigationHeight : Dp = 5.dp,
 
     getImageAndVideoUrl : () -> Unit = {},
-    releaseVideo : () -> Unit = {},
     startVideo : () -> Unit = {},
     download : () -> Unit = {},
     share : () -> Unit = {}
 ){
     val visibility by remember {
         videoVisibility
-    }
-
-    DisposableEffect(Unit){
-        onDispose {
-            releaseVideo()
-        }
     }
 
     Surface(modifier = Modifier
@@ -185,7 +178,6 @@ fun CameraScreen(
         navigationHeight.dp,
 
         viewModel::getImageAndVideoUrl,
-        viewModel::releaseVideo,
         viewModel::startVideo,
         viewModel::download,
         viewModel::share

@@ -555,7 +555,7 @@ class MainViewModel @Inject constructor(
         garden["raspberry_code"]    = dataInternalRepository.getRaspberryCode()
         database.updateNode(
             DatabaseEntry.Garden.key,
-            listOf(),
+            listOf(garden["id"].toString()),
             garden
         )
     }

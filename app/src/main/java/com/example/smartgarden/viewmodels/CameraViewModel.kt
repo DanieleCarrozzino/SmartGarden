@@ -48,7 +48,7 @@ class CameraViewModel @Inject constructor(
     var videoVisibility = mutableStateOf(false)
 
     // Context methods
-    var downloadFromUrl     : (String) -> Unit = {}
+    var downloadFromUrl     : (String, String) -> Unit = {_, _ ->}
     var shareFromText       : (String) -> Unit = {}
 
     fun init() {
@@ -87,7 +87,7 @@ class CameraViewModel @Inject constructor(
     }
 
     fun releaseVideo(){
-        //player.release()
+        player.release()
     }
 
     override fun onPlaybackStateChanged(playbackState: Int) {
@@ -111,13 +111,13 @@ class CameraViewModel @Inject constructor(
     fun download(){
         Log.d(TAG, "Starting download")
         canDownload.value = false
-        downloadFromUrl(timelapsUrl.value)
+        downloadFromUrl(timelapsUrl.value, "garden_timelapse.mp4")
     }
 
     fun downloadInstant(){
         Log.d(TAG, "Starting download")
         canDownload.value = false
-        downloadFromUrl(instantCameraUrl.value)
+        downloadFromUrl(instantCameraUrl.value, "garden_picture.png")
     }
 
     fun share(){
